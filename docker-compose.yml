@@ -1,0 +1,32 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: gvenzl/oracle-free:slim
+    environment:
+      ORACLE_PASSWORD: ${DB_ROOT_PASSWORD}
+      APP_USER: ${DB_USER}
+      APP_USER_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+volumes:
+  oracle_data:

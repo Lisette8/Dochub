@@ -1,0 +1,29 @@
+# Fichiers d'environnement & secrets
+.env
+.env.local
+
+# Environnement virtuel
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Base de données locale de test
+db.sqlite3
+db.sqlite3-journal
+
+# Fichiers système macOS
+.DS_Store
+._*
+
+# Éditeurs et IDE
+.vscode/
+.idea/
+
+# Médias et fichiers statiques Django
+media/
+staticfiles/
