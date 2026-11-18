@@ -68,9 +68,7 @@ docker compose exec web python manage.py migrate
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
- 
-6. **Accéder à l'application**
-   - Administration : <http://localhost:8000/admin>
+
 ## Commandes utiles
  
 ```bash
