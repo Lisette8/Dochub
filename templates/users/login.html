@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Connexion — DocHub{% endblock %}
+{% block body %}
+<div class="auth">
+  <section class="auth-hero">
+    <div class="logo">{% include "partials/logo.html" %} DocHub</div>
+    <div class="auth-hero-body">
+      <h1>Documents, actualités, événements et support, au même endroit.</h1>
+      <p>La plateforme centrale de votre organisation, avec un assistant IA qui répond à partir de vos propres documents.</p>
+    </div>
+    <div class="auth-features">
+      <div>{% include "partials/icon.html" with name="file" %} Base documentaire</div>
+      <div>{% include "partials/icon.html" with name="support" %} Support par tickets</div>
+      <div>{% include "partials/icon.html" with name="sparkle" %} Assistant IA</div>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <form class="auth-form" method="post" novalidate>
+      {% csrf_token %}
+      <h2>Connexion</h2>
+      <p class="lead">Connectez-vous avec votre compte DocHub.</p>
+
+      {% if form.non_field_errors %}
+        <div class="alert" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+      {% endif %}
+
+      <div class="field{% if form.username.errors %} has-error{% endif %}">
+        <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+        {{ form.username }}
+        {% for e in form.username.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="field{% if form.password.errors %} has-error{% endif %}">
+        <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+        {{ form.password }}
+        {% for e in form.password.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="auth-row">
+        <label class="check">{{ form.remember_me }} {{ form.remember_me.label }}</label>
+      </div>
+
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn block">Se connecter</button>
+      <p class="auth-foot">Pas de compte ? Les comptes sont créés par l'administrateur.</p>
+    </form>
+  </section>
+</div>
+{% endblock %}

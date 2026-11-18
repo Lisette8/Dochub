@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — DocHub{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bonjour {{ user.first_name }}</h1>
+    <p>{% if user.is_admin %}Vue d'ensemble de la plateforme{% else %}Votre espace personnel DocHub{% endif %}</p>
+  </div>
+</div>
+
+{% if user.is_admin %}
+<div class="grid grid-4" style="margin-bottom:16px">
+  <div class="card stat">
+    <div class="stat-top">Utilisateurs <span class="stat-icon">{% include "partials/icon.html" with name="users" %}</span></div>
+    <div class="stat-value">{{ stats.users }}</div>
+    <div class="stat-hint">{{ stats.admins }} administrateur{{ stats.admins|pluralize }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-top">Comptes actifs <span class="stat-icon">{% include "partials/icon.html" with name="shield" %}</span></div>
+    <div class="stat-value">{{ stats.active }}</div>
+    <div class="stat-hint">{{ stats.inactive }} désactivé{{ stats.inactive|pluralize }}</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Mon compte</h2>
+    <p class="sub">Informations de connexion</p>
+    <dl class="info-list">
+      <div><dt>Nom</dt><dd>{{ user.get_full_name }}</dd></div>
+      <div><dt>E-mail</dt><dd>{{ user.email }}</dd></div>
+      <div><dt>Rôle</dt><dd><span class="badge {% if user.is_admin %}admin{% endif %}">{{ user.get_role_display }}</span></dd></div>
+      <div><dt>Statut</dt><dd><span class="badge ok">Actif</span></dd></div>
+      <div><dt>Membre depuis</dt><dd>{{ user.date_joined|date:"d/m/Y" }}</dd></div>
+    </dl>
+  </div>
+  {% if user.is_admin %}
+  <div class="card">
+    <h2>Administration</h2>
+    <p class="sub">Gérer les comptes et les rôles</p>
+    <a class="btn block" href="{% url 'users:admin_space' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
