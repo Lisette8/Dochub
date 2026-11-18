@@ -20,6 +20,9 @@ class TicketAdmin(admin.ModelAdmin):
         # Après création, l'auteur n'est plus modifiable
         if obj is not None:
             readonly.append("auteur")
+        # Un non-admin ne touche ni au statut ni à l'assignation
+        if not request.user.is_superuser:
+            readonly += ["statut", "assigne_a"]
         return readonly
 
     def save_model(self, request, obj, form, change):
@@ -28,8 +31,19 @@ class TicketAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
-            qs = super().get_queryset(request)
-            # Le superuser voit tout, les autres seulement leurs tickets
-            if request.user.is_superuser:
-                return qs
-            return qs.filter(auteur=request.user)
+        qs = super().get_queryset(request)
+        # Le superuser voit tout, les autres seulement leurs tickets
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(auteur=request.user)
+
+    def has_change_permission(self, request, obj=None):
+        allowed = super().has_change_permission(request, obj)
+        if obj is not None and not request.user.is_superuser:
+            # Modifiable seulement tant que le ticket est « Ouvert »
+            return allowed and obj.statut == Ticket.Statut.OUVERT
+        return allowed
+
+    def has_delete_permission(self, request, obj=None):
+        # Suppression réservée à l'admin
+        return request.user.is_superuser
