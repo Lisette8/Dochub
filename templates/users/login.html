@@ -2,24 +2,14 @@
 {% block title %}Connexion — DocHub{% endblock %}
 {% block body %}
 <div class="auth">
-  <section class="auth-hero">
-    <div class="logo">{% include "partials/logo.html" %} DocHub</div>
-    <div class="auth-hero-body">
-      <h1>Documents, actualités, événements et support, au même endroit.</h1>
-      <p>La plateforme centrale de votre organisation, avec un assistant IA qui répond à partir de vos propres documents.</p>
-    </div>
-    <div class="auth-features">
-      <div>{% include "partials/icon.html" with name="file" %} Base documentaire</div>
-      <div>{% include "partials/icon.html" with name="support" %} Support par tickets</div>
-      <div>{% include "partials/icon.html" with name="sparkle" %} Assistant IA</div>
-    </div>
-  </section>
+  {% include "users/_auth_hero.html" %}
 
   <section class="auth-panel">
     <form class="auth-form" method="post" novalidate>
       {% csrf_token %}
       <h2>Connexion</h2>
       <p class="lead">Connectez-vous avec votre compte DocHub.</p>
+      {% include "partials/messages.html" %}
 
       {% if form.non_field_errors %}
         <div class="alert" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
@@ -43,7 +33,7 @@
 
       <input type="hidden" name="next" value="{{ next }}">
       <button type="submit" class="btn block">Se connecter</button>
-      <p class="auth-foot">Pas de compte ? Les comptes sont créés par l'administrateur.</p>
+      <p class="auth-foot">Pas de compte ? <a href="{% url 'users:register' %}">Créer un compte</a></p>
     </form>
   </section>
 </div>

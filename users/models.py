@@ -32,12 +32,18 @@ class User(AbstractUser):
 
     - connexion par email (pas de nom d'utilisateur) ;
     - deux rôles : Utilisateur et Administrateur ;
-    - « désactiver » un compte = is_active à False (le compte ne peut plus se connecter).
+    - statut du compte (diagramme de classes : OUVERT / BLOQUÉ / FERMÉ) ;
+      seul un compte « Ouvert » peut se connecter (is_active est déduit du statut).
     """
 
     class Role(models.TextChoices):
         UTILISATEUR = "UTILISATEUR", "Utilisateur"
         ADMIN = "ADMIN", "Administrateur"
+
+    class Statut(models.TextChoices):
+        OUVERT = "OUVERT", "Ouvert"
+        BLOQUE = "BLOQUE", "Bloqué"
+        FERME = "FERME", "Fermé"
 
     username = None
     email = models.EmailField("adresse email", unique=True)
@@ -45,6 +51,9 @@ class User(AbstractUser):
     last_name = models.CharField("nom", max_length=150)
     role = models.CharField(
         "rôle", max_length=20, choices=Role.choices, default=Role.UTILISATEUR
+    )
+    statut = models.CharField(
+        "statut du compte", max_length=10, choices=Statut.choices, default=Statut.OUVERT
     )
 
     USERNAME_FIELD = "email"
@@ -67,6 +76,8 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         # Un Administrateur DocHub a aussi accès à l'interface /admin/ de Django.
         self.is_staff = self.role == self.Role.ADMIN
+        # Seul un compte « Ouvert » peut se connecter.
+        self.is_active = self.statut == self.Statut.OUVERT
         if self.email:
             self.email = self.email.lower()
         super().save(*args, **kwargs)

@@ -1,4 +1,7 @@
+import re
+
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -59,7 +62,7 @@ class LoginPageTests(TestCase):
         self.assertContains(r, "Le mot de passe est obligatoire.")
 
     def test_deactivated_account_cannot_log_in(self):
-        self.user.is_active = False
+        self.user.statut = User.Statut.BLOQUE
         self.user.save()
         r = self.post_login("user@dochub.test", PASSWORD)
         self.assertEqual(r.status_code, 200)
@@ -149,7 +152,7 @@ class JWTTests(TestCase):
         self.assertEqual(r.status_code, 401)
 
     def test_deactivated_account_gets_no_token(self):
-        self.user.is_active = False
+        self.user.statut = User.Statut.BLOQUE
         self.user.save()
         r = self.api.post(reverse("users:token_obtain"),
                           {"email": "user@dochub.test", "password": PASSWORD}, format="json")
@@ -161,3 +164,149 @@ class JWTTests(TestCase):
         r2 = self.api.post(reverse("users:token_refresh"), {"refresh": r.data["refresh"]}, format="json")
         self.assertEqual(r2.status_code, 200)
         self.assertIn("access", r2.data)
+
+
+class RegisterTests(TestCase):
+    url = reverse("users:register")
+
+    def data(self, **kw):
+        d = {"first_name": "Lina", "last_name": "Bouzid", "email": "Lina.Bouzid@dochub.test",
+             "password1": "Un-Mot-De-Passe-Sur-9", "password2": "Un-Mot-De-Passe-Sur-9"}
+        d.update(kw)
+        return d
+
+    def test_register_creates_user_account_and_logs_in(self):
+        r = self.client.post(self.url, self.data())
+        self.assertRedirects(r, reverse("users:dashboard"))
+        u = User.objects.get(email="lina.bouzid@dochub.test")
+        self.assertEqual(u.role, User.Role.UTILISATEUR)
+        self.assertTrue(u.is_active)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), u.pk)
+
+    def test_register_cannot_choose_admin_role(self):
+        self.client.post(self.url, self.data(role="ADMIN"))
+        self.assertFalse(User.objects.get(email="lina.bouzid@dochub.test").is_admin)
+
+    def test_register_validation(self):
+        make_user(email="pris@dochub.test")
+        cases = [
+            ({"email": "pris@dochub.test"}, "Un compte existe déjà avec cette adresse email."),
+            ({"email": "pas-un-email"}, "Saisissez une adresse email valide."),
+            ({"first_name": ""}, "Ce champ est obligatoire."),
+            ({"last_name": "B0uzid!"}, "Lettres, espaces, apostrophes et tirets uniquement."),
+            ({"password2": "autre-chose-123"}, "Les deux mots de passe ne correspondent pas."),
+            ({"password1": "123", "password2": "123"}, "Ce mot de passe est trop court"),
+        ]
+        for override, message in cases:
+            with self.subTest(override=override):
+                r = self.client.post(self.url, self.data(**override))
+                self.assertEqual(r.status_code, 200)
+                self.assertContains(r, message.replace("'", "&#x27;"))
+        self.assertFalse(User.objects.filter(email="lina.bouzid@dochub.test").exists())
+
+    def test_login_page_links_to_register(self):
+        self.assertContains(self.client.get(reverse("users:login")), self.url)
+
+
+class AdminCreateUserTests(TestCase):
+    """US-05 : en tant qu'admin, je crée un compte et lui attribue un rôle."""
+
+    url = reverse("users:admin_space")
+
+    def setUp(self):
+        self.admin = make_user(email="admin@dochub.test", role=User.Role.ADMIN)
+        self.client.force_login(self.admin)
+
+    def data(self, **kw):
+        d = {"first_name": "Youssef", "last_name": "Trabelsi", "email": "youssef@dochub.test",
+             "role": "UTILISATEUR", "statut": "OUVERT"}
+        d.update(kw)
+        return d
+
+    def test_admin_creates_account_with_role_and_activation_email(self):
+        r = self.client.post(self.url, self.data(role="ADMIN"), follow=True)
+        self.assertContains(r, "Compte créé pour Youssef Trabelsi (Administrateur)")
+        u = User.objects.get(email="youssef@dochub.test")
+        self.assertTrue(u.is_admin)
+        self.assertFalse(u.has_usable_password())  # l'admin ne choisit pas le mot de passe
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["youssef@dochub.test"])
+
+    def test_activation_link_sets_password_then_user_can_log_in(self):
+        self.client.post(self.url, self.data())
+        self.client.post(reverse("users:logout"))
+        link = re.search(r"http://testserver(/activer/\S+)", mail.outbox[0].body).group(1)
+        r = self.client.get(link, follow=True)  # Django redirige vers une URL sans le jeton
+        form_url = r.redirect_chain[-1][0]
+        r = self.client.post(form_url, {"new_password1": "Nouveau-Mdp-2026", "new_password2": "Nouveau-Mdp-2026"})
+        self.assertRedirects(r, reverse("users:login"))
+        r = self.client.post(reverse("users:login"), {"username": "youssef@dochub.test", "password": "Nouveau-Mdp-2026"})
+        self.assertRedirects(r, reverse("users:dashboard"))
+        # Le lien ne fonctionne qu'une fois
+        self.client.post(reverse("users:logout"))
+        self.assertContains(self.client.get(link, follow=True), "Lien invalide")
+
+    def test_blocked_account_cannot_log_in(self):
+        self.client.post(self.url, self.data(statut="BLOQUE"))
+        u = User.objects.get(email="youssef@dochub.test")
+        self.assertFalse(u.is_active)
+
+    def test_admin_form_validation(self):
+        cases = [
+            ({"email": "admin@dochub.test"}, "Un compte existe déjà avec cette adresse email."),
+            ({"email": ""}, "L'adresse email est obligatoire."),
+            ({"first_name": "  "}, "Ce champ est obligatoire."),
+            ({"role": "SUPERADMIN"}, "Rôle invalide."),
+            ({"statut": "XYZ"}, "Statut invalide."),
+        ]
+        for override, message in cases:
+            with self.subTest(override=override):
+                r = self.client.post(self.url, self.data(**override))
+                self.assertEqual(r.status_code, 200)
+                self.assertContains(r, message.replace("'", "&#x27;"))
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_simple_user_cannot_create_accounts(self):
+        self.client.force_login(make_user())
+        r = self.client.post(self.url, self.data())
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(User.objects.filter(email="youssef@dochub.test").exists())
+
+    def test_page_lists_accounts(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, "Utilisateurs et rôles")
+        self.assertContains(r, "admin@dochub.test")
+
+
+class AdminCreateUserAPITests(TestCase):
+    url = reverse("users:api_users")
+
+    def setUp(self):
+        self.api = APIClient()
+        self.admin = make_user(email="admin@dochub.test", role=User.Role.ADMIN)
+
+    def auth(self, email):
+        r = self.api.post(reverse("users:token_obtain"), {"email": email, "password": PASSWORD}, format="json")
+        self.api.credentials(HTTP_AUTHORIZATION=f"Bearer {r.data['access']}")
+
+    def test_admin_creates_account_via_api(self):
+        self.auth("admin@dochub.test")
+        r = self.api.post(self.url, {"first_name": "Mariem", "last_name": "Kacem",
+                                     "email": "mariem@dochub.test", "role": "UTILISATEUR"}, format="json")
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data["role"], "UTILISATEUR")
+        self.assertEqual(r.data["statut"], "OUVERT")
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_api_validation(self):
+        self.auth("admin@dochub.test")
+        r = self.api.post(self.url, {"first_name": "", "email": "admin@dochub.test", "role": "X"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(set(r.data), {"first_name", "last_name", "email", "role"})
+
+    def test_simple_user_gets_403_and_anonymous_401(self):
+        self.assertEqual(self.api.get(self.url).status_code, 401)
+        make_user()
+        self.auth("user@dochub.test")
+        self.assertEqual(self.api.post(self.url, {}, format="json").status_code, 403)

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Créer un compte — DocHub{% endblock %}
+{% block body %}
+<div class="auth">
+  {% include "users/_auth_hero.html" %}
+  <section class="auth-panel">
+    <form class="auth-form" method="post" novalidate>
+      {% csrf_token %}
+      <h2>Créer un compte</h2>
+      <p class="lead">Inscrivez-vous pour accéder à DocHub.</p>
+      {% if form.non_field_errors %}<div class="alert" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+      <div class="field-row">
+        {% include "partials/field.html" with field=form.first_name %}
+        {% include "partials/field.html" with field=form.last_name %}
+      </div>
+      {% include "partials/field.html" with field=form.email %}
+      {% include "partials/field.html" with field=form.password1 %}
+      {% include "partials/field.html" with field=form.password2 %}
+      <button type="submit" class="btn block">Créer mon compte</button>
+      <p class="auth-foot">Déjà un compte ? <a href="{% url 'users:login' %}">Se connecter</a></p>
+    </form>
+  </section>
+</div>
+{% endblock %}

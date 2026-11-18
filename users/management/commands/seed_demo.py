@@ -24,7 +24,7 @@ class Command(BaseCommand):
             user, created = User.objects.get_or_create(
                 email=email, defaults={"first_name": first, "last_name": last, "role": role}
             )
-            user.first_name, user.last_name, user.role, user.is_active = first, last, role, True
+            user.first_name, user.last_name, user.role, user.statut = first, last, role, User.Statut.OUVERT
             if role == User.Role.ADMIN:
                 user.is_superuser = True
             user.set_password(password)

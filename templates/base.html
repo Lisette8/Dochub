@@ -52,7 +52,7 @@
       <span class="icon-btn bell" title="Notifications">{% include "partials/icon.html" with name="bell" %}</span>
       <span class="avatar">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
     </header>
-    <main class="content">{% block content %}{% endblock %}</main>
+    <main class="content">{% include "partials/messages.html" %}{% block content %}{% endblock %}</main>
   </div>
 </div>
 {% endblock %}
