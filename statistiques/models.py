@@ -1,5 +1,9 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.core.validators import MinLengthValidator
+from django.db import models
+from django.utils import timezone
+
 
 class Rapport(models.Model):
     class Format(models.TextChoices):
@@ -12,7 +16,10 @@ class Rapport(models.Model):
         EN_COURS = "EN_COURS", "En cours de traitement"
         TRAITE = "TRAITE", "Traité"
 
-    titre = models.CharField(max_length=200)
+    titre = models.CharField(
+        max_length=200,
+        validators=[MinLengthValidator(3, "Le titre doit contenir au moins 3 caractères.")],
+    )
     description = models.TextField(blank=True)
     contenu = models.TextField(blank=True)
     format = models.CharField(max_length=4, choices=Format.choices, default=Format.PDF)
@@ -23,10 +30,31 @@ class Rapport(models.Model):
     archive = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Rapport"
+        verbose_name_plural = "Rapports"
+
     def __str__(self):
         return self.titre
-    
+
+    def clean(self):
+        erreurs = {}
+
+        if self.titre and not self.titre.strip():
+            erreurs["titre"] = "Le titre ne peut pas contenir seulement des espaces."
+
+        if self.date_debut and self.date_fin:
+            if self.date_fin < self.date_debut:
+                erreurs["date_fin"] = "La date de fin doit être postérieure ou égale à la date de début."
+            elif self.date_fin > timezone.localdate():
+                erreurs["date_fin"] = "La date de fin ne peut pas être dans le futur."
+
+        if erreurs:
+            raise ValidationError(erreurs)
+
     def generer_contenu(self):
+        """Synthèse des indicateurs de la période (US32)."""
         User = get_user_model()
         total_utilisateurs = User.objects.count()
         nouveaux = User.objects.filter(
