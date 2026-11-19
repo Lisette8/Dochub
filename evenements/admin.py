@@ -1,20 +1,56 @@
-from django.contrib import admin
+from datetime import timedelta
+
+from django.contrib import admin, messages
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.html import format_html
 
 from .models import Evenement
 
 
+class StatutEvenementFilter(admin.SimpleListFilter):
+    """Filtre "À venir / Passés" dans la colonne de droite de l'admin."""
+
+    title = "statut"
+    parameter_name = "statut"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("a_venir", "À venir"),
+            ("passes", "Passés"),
+        )
+
+    def queryset(self, request, queryset):
+        maintenant = timezone.now()
+        if self.value() == "a_venir":
+            return queryset.filter(date_evenement__gte=maintenant)
+        if self.value() == "passes":
+            return queryset.filter(date_evenement__lt=maintenant)
+        return queryset
+
+
 @admin.register(Evenement)
 class EvenementAdmin(admin.ModelAdmin):
-    # Colonnes affichées dans la liste
-    list_display = ("titre", "date_evenement", "lieu", "a_venir", "cree_par", "created_at")
+    # Colonnes affichées dans la liste (+ boutons Modifier / Supprimer)
+    list_display = (
+        "titre", "date_evenement", "lieu", "a_venir",
+        "cree_par", "created_at", "boutons_actions",
+    )
     list_display_links = ("titre",)
 
+    # UPDATE rapide : date et lieu modifiables directement dans la liste
+    # (bouton "Enregistrer" en bas de la liste)
+    list_editable = ("date_evenement", "lieu")
+
     # Filtres (colonne de droite) et recherche
-    list_filter = ("date_evenement", "lieu")
+    list_filter = (StatutEvenementFilter, "date_evenement", "lieu")
     search_fields = ("titre", "description", "lieu")
     date_hierarchy = "date_evenement"
     ordering = ("date_evenement",)
     list_per_page = 20
+
+    # Actions groupées (cases à cocher + menu "Action")
+    actions = ["reporter_d_une_semaine", "supprimer_evenements_passes"]
 
     # Formulaire de création / modification
     fieldsets = (
@@ -24,12 +60,68 @@ class EvenementAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("cree_par", "created_at", "updated_at")
 
+    # Boutons "Enregistrer" et "Supprimer" aussi en haut du formulaire
+    save_on_top = True
+
+    # ------------------------------------------------------------------
+    # Colonnes calculées
+    # ------------------------------------------------------------------
     @admin.display(boolean=True, description="À venir")
     def a_venir(self, obj):
         return obj.est_a_venir
 
+    @admin.display(description="Actions")
+    def boutons_actions(self, obj):
+        url_modifier = reverse("admin:evenements_evenement_change", args=[obj.pk])
+        url_supprimer = reverse("admin:evenements_evenement_delete", args=[obj.pk])
+        return format_html(
+            '<a class="button" href="{}" style="margin-right:6px;">Modifier</a>'
+            '<a class="button" href="{}" style="background:#ba2121;color:#fff;">Supprimer</a>',
+            url_modifier,
+            url_supprimer,
+        )
+
+    # ------------------------------------------------------------------
+    # CREATE / UPDATE
+    # ------------------------------------------------------------------
     def save_model(self, request, obj, form, change):
         # À la création, l'admin connecté est enregistré comme créateur
         if not change and obj.cree_par is None:
             obj.cree_par = request.user
         super().save_model(request, obj, form, change)
+
+    @admin.action(description="Reporter les événements sélectionnés d'une semaine")
+    def reporter_d_une_semaine(self, request, queryset):
+        nb = 0
+        for evenement in queryset:
+            evenement.date_evenement += timedelta(days=7)
+            evenement.save(update_fields=["date_evenement", "updated_at"])
+            nb += 1
+        self.message_user(
+            request,
+            f"{nb} événement(s) reporté(s) d'une semaine.",
+            messages.SUCCESS,
+        )
+
+    # ------------------------------------------------------------------
+    # DELETE
+    # (La suppression simple et l'action "Supprimer les événements
+    #  sélectionnés" sont fournies par Django, avec page de confirmation.)
+    # ------------------------------------------------------------------
+    @admin.action(description="Supprimer les événements passés parmi la sélection")
+    def supprimer_evenements_passes(self, request, queryset):
+        passes = queryset.filter(date_evenement__lt=timezone.now())
+        nb = passes.count()
+        if nb == 0:
+            self.message_user(
+                request,
+                "Aucun événement passé dans la sélection.",
+                messages.WARNING,
+            )
+            return
+        passes.delete()
+        self.message_user(
+            request,
+            f"{nb} événement(s) passé(s) supprimé(s).",
+            messages.SUCCESS,
+        )
