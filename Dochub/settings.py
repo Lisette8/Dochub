@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'statistiques',
+
+
 
      # Apps DocHub
     'evenements',
@@ -54,6 +57,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     # Modules DocHub
     'users',
+
 
 ]
 
