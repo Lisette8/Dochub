@@ -44,11 +44,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+
+     # Apps DocHub
+    'evenements',
+
     # Librairies
     'rest_framework',
     'rest_framework_simplejwt',
     # Modules DocHub
     'users',
+
 ]
 
 MIDDLEWARE = [
