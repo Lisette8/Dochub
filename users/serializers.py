@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .forms import clean_new_email, clean_person_name
+from .forms import CREATION_STATUTS, clean_new_email, clean_person_name
 
 User = get_user_model()
 
@@ -10,7 +10,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "role", "statut", "is_active", "date_joined", "last_login"]
+        fields = ["id", "email", "first_name", "last_name", "role", "statut", "suspendu_jusqua", "is_active", "date_joined", "last_login"]
         read_only_fields = fields
 
 
@@ -21,7 +21,7 @@ class AdminCreateUserSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=150)
     email = serializers.EmailField(max_length=254)
     role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.UTILISATEUR)
-    statut = serializers.ChoiceField(choices=User.Statut.choices, default=User.Statut.OUVERT)
+    statut = serializers.ChoiceField(choices=CREATION_STATUTS, default=User.Statut.OUVERT)
 
     @staticmethod
     def _run(check, value):

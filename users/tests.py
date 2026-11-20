@@ -97,18 +97,33 @@ class LoginPageTests(TestCase):
 
 
 class PagePermissionTests(TestCase):
+    changelist = reverse("admin:users_user_changelist")
+
     def test_anonymous_is_redirected_to_login(self):
         r = self.client.get(reverse("users:dashboard"))
         self.assertRedirects(r, reverse("users:login") + "?next=/")
 
-    def test_user_cannot_access_admin_space(self):
+    def test_old_administration_url_opens_django_admin(self):
+        self.client.force_login(make_user(role=User.Role.ADMIN))
+        r = self.client.get(reverse("users:admin_space"))
+        self.assertRedirects(r, self.changelist)
+
+    def test_sidebar_and_dashboard_link_to_django_admin_for_admins_only(self):
+        self.client.force_login(make_user(email="a@dochub.test", role=User.Role.ADMIN))
+        r = self.client.get(reverse("users:dashboard"))
+        self.assertContains(r, f'href="{self.changelist}"', count=2)  # menu + carte Administration
         self.client.force_login(make_user())
-        self.assertEqual(self.client.get(reverse("users:admin_space")).status_code, 403)
+        self.assertNotContains(self.client.get(reverse("users:dashboard")), self.changelist)
+
+    def test_user_cannot_open_django_admin(self):
+        self.client.force_login(make_user())
+        r = self.client.get(self.changelist)
+        self.assertRedirects(r, reverse("admin:login") + "?next=" + self.changelist)
 
     def test_logged_in_pages_are_never_cached(self):
         self.client.force_login(make_user(role=User.Role.ADMIN))
-        for name in ["users:dashboard", "users:admin_space"]:
-            cc = self.client.get(reverse(name))["Cache-Control"]
+        for url in [reverse("users:dashboard"), self.changelist]:
+            cc = self.client.get(url)["Cache-Control"]
             self.assertIn("no-store", cc)
             self.assertIn("private", cc)
 
@@ -118,11 +133,7 @@ class PagePermissionTests(TestCase):
         self.client.post(reverse("users:logout"))
         self.client.force_login(make_user())
         # Le navigateur redemande la page (no-store) : la session actuelle s'applique
-        self.assertEqual(self.client.get(reverse("users:admin_space")).status_code, 403)
-
-    def test_admin_can_access_admin_space(self):
-        self.client.force_login(make_user(role=User.Role.ADMIN))
-        self.assertEqual(self.client.get(reverse("users:admin_space")).status_code, 200)
+        self.assertEqual(self.client.get(self.changelist).status_code, 302)
 
 
 class JWTTests(TestCase):
@@ -145,6 +156,11 @@ class JWTTests(TestCase):
 
     def test_protected_route_without_token_is_refused(self):
         self.assertEqual(self.api.get(reverse("users:me")).status_code, 401)
+
+    def test_email_is_case_insensitive(self):
+        r = self.api.post(reverse("users:token_obtain"),
+                          {"email": " USER@DocHub.test ", "password": PASSWORD}, format="json")
+        self.assertEqual(r.status_code, 200)
 
     def test_wrong_credentials_give_401(self):
         r = self.api.post(reverse("users:token_obtain"),
@@ -208,35 +224,20 @@ class RegisterTests(TestCase):
         self.assertContains(self.client.get(reverse("users:login")), self.url)
 
 
-class AdminCreateUserTests(TestCase):
-    """US-05 : en tant qu'admin, je crée un compte et lui attribue un rôle."""
-
-    url = reverse("users:admin_space")
+class ActivationTests(TestCase):
+    """Compte créé par un admin (admin Django) -> lien d'activation -> connexion sur DocHub."""
 
     def setUp(self):
-        self.admin = make_user(email="admin@dochub.test", role=User.Role.ADMIN)
-        self.client.force_login(self.admin)
-
-    def data(self, **kw):
-        d = {"first_name": "Youssef", "last_name": "Trabelsi", "email": "youssef@dochub.test",
-             "role": "UTILISATEUR", "statut": "OUVERT"}
-        d.update(kw)
-        return d
-
-    def test_admin_creates_account_with_role_and_activation_email(self):
-        r = self.client.post(self.url, self.data(role="ADMIN"), follow=True)
-        self.assertContains(r, "Compte créé pour Youssef Trabelsi (Administrateur)")
-        u = User.objects.get(email="youssef@dochub.test")
-        self.assertTrue(u.is_admin)
-        self.assertFalse(u.has_usable_password())  # l'admin ne choisit pas le mot de passe
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, ["youssef@dochub.test"])
+        self.client.force_login(make_user(email="admin@dochub.test", role=User.Role.ADMIN))
+        self.client.post(reverse("admin:users_user_add"), {
+            "first_name": "Youssef", "last_name": "Trabelsi", "email": "youssef@dochub.test",
+            "role": "UTILISATEUR", "statut": "OUVERT", "password1": "", "password2": ""})
+        self.client.post(reverse("users:logout"))
+        self.link = re.search(r"http://testserver(/activer/\S+)", mail.outbox[0].body).group(1)
 
     def test_activation_link_sets_password_then_user_can_log_in(self):
-        self.client.post(self.url, self.data())
-        self.client.post(reverse("users:logout"))
-        link = re.search(r"http://testserver(/activer/\S+)", mail.outbox[0].body).group(1)
-        r = self.client.get(link, follow=True)  # Django redirige vers une URL sans le jeton
+        r = self.client.get(self.link, follow=True)  # Django redirige vers une URL sans le jeton
+        self.assertTemplateUsed(r, "users/activate.html")
         form_url = r.redirect_chain[-1][0]
         r = self.client.post(form_url, {"new_password1": "Nouveau-Mdp-2026", "new_password2": "Nouveau-Mdp-2026"})
         self.assertRedirects(r, reverse("users:login"))
@@ -244,39 +245,14 @@ class AdminCreateUserTests(TestCase):
         self.assertRedirects(r, reverse("users:dashboard"))
         # Le lien ne fonctionne qu'une fois
         self.client.post(reverse("users:logout"))
-        self.assertContains(self.client.get(link, follow=True), "Lien invalide")
+        self.assertContains(self.client.get(self.link, follow=True), "Lien invalide")
 
-    def test_blocked_account_cannot_log_in(self):
-        self.client.post(self.url, self.data(statut="BLOQUE"))
-        u = User.objects.get(email="youssef@dochub.test")
-        self.assertFalse(u.is_active)
-
-    def test_admin_form_validation(self):
-        cases = [
-            ({"email": "admin@dochub.test"}, "Un compte existe déjà avec cette adresse email."),
-            ({"email": ""}, "L'adresse email est obligatoire."),
-            ({"first_name": "  "}, "Ce champ est obligatoire."),
-            ({"role": "SUPERADMIN"}, "Rôle invalide."),
-            ({"statut": "XYZ"}, "Statut invalide."),
-        ]
-        for override, message in cases:
-            with self.subTest(override=override):
-                r = self.client.post(self.url, self.data(**override))
-                self.assertEqual(r.status_code, 200)
-                self.assertContains(r, message.replace("'", "&#x27;"))
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(len(mail.outbox), 0)
-
-    def test_simple_user_cannot_create_accounts(self):
-        self.client.force_login(make_user())
-        r = self.client.post(self.url, self.data())
-        self.assertEqual(r.status_code, 403)
-        self.assertFalse(User.objects.filter(email="youssef@dochub.test").exists())
-
-    def test_page_lists_accounts(self):
-        r = self.client.get(self.url)
-        self.assertContains(r, "Utilisateurs et rôles")
-        self.assertContains(r, "admin@dochub.test")
+    def test_activation_form_validation(self):
+        form_url = self.client.get(self.link, follow=True).redirect_chain[-1][0]
+        r = self.client.post(form_url, {"new_password1": "Nouveau-Mdp-2026", "new_password2": "autre"})
+        self.assertContains(r, "Les deux mots de passe ne correspondent pas.")
+        r = self.client.post(form_url, {"new_password1": "", "new_password2": ""})
+        self.assertContains(r, "Le mot de passe est obligatoire.")
 
 
 class AdminCreateUserAPITests(TestCase):

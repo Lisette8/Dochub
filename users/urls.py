@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
@@ -12,7 +13,9 @@ urlpatterns = [
     path("deconnexion/", views.LogoutView.as_view(), name="logout"),
     path("inscription/", views.register, name="register"),
     path("activer/<uidb64>/<token>/", views.ActivateView.as_view(), name="activate"),
-    path("administration/", views.admin_space, name="admin_space"),
+    # Ancienne page « Utilisateurs » : la gestion des comptes est dans l'admin Django.
+    path("administration/", RedirectView.as_view(pattern_name="admin:users_user_changelist", permanent=False),
+         name="admin_space"),
     # API JWT (US-06)
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

@@ -39,8 +39,8 @@
   {% if user.is_admin %}
   <div class="card">
     <h2>Administration</h2>
-    <p class="sub">Gérer les comptes et les rôles</p>
-    <a class="btn block" href="{% url 'users:admin_space' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+    <p class="sub">Créer, modifier, suspendre ou supprimer des comptes (admin Django)</p>
+    <a class="btn block" href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
   </div>
   {% endif %}
 </div>

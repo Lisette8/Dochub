@@ -1,4 +1,4 @@
-"""Logique métier partagée entre les pages et l'API du module Utilisateurs."""
+"""Logique métier partagée entre les pages, l'API et l'admin Django du module Utilisateurs."""
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.urls import reverse
@@ -25,6 +25,12 @@ def create_account_by_admin(request, *, email, first_name, last_name, role, stat
         email=email, password=None, first_name=first_name, last_name=last_name,
         role=role, statut=statut,
     )
+    send_activation_email(request, user)
+    return user
+
+
+def send_activation_email(request, user):
+    """Envoie à l'utilisateur le lien (à usage unique) pour choisir son mot de passe."""
     send_mail(
         subject="Activez votre compte DocHub",
         message=(
@@ -38,4 +44,3 @@ def create_account_by_admin(request, *, email, first_name, last_name, role, stat
         from_email=None,
         recipient_list=[user.email],
     )
-    return user

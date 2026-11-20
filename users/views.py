@@ -3,15 +3,15 @@ from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .forms import ActivationForm, AdminCreateUserForm, LoginForm, RegisterForm
+from .forms import ActivationForm, LoginForm, RegisterForm
 from .models import User
-from .permissions import IsAdmin, admin_required
+from .permissions import IsAdmin
 from .serializers import AdminCreateUserSerializer, UserSerializer
 from .services import create_account_by_admin
 
@@ -42,7 +42,7 @@ def register(request):
     form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
-        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        login(request, user, backend="users.backends.StatutBackend")
         request.session.set_expiry(0)
         messages.success(request, "Bienvenue sur DocHub, votre compte a été créé.")
         return redirect("users:dashboard")
@@ -75,32 +75,6 @@ def dashboard(request):
             "inactive": users.filter(is_active=False).count(),
         }
     return render(request, "users/dashboard.html", context)
-
-
-@admin_required
-def admin_space(request):
-    """Page « Utilisateurs et rôles » (maquette p.12).
-
-    US-05 : formulaire « Ajouter un utilisateur » (création + rôle + statut).
-    La liste affichée sert à voir le résultat ; recherche, filtres, modification
-    et suppression viendront avec US-22.
-    """
-    form = AdminCreateUserForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        user = create_account_by_admin(request, **form.cleaned_data)
-        messages.success(
-            request,
-            f"Compte créé pour {user.get_full_name()} ({user.get_role_display()}). "
-            f"Un e-mail d'activation a été envoyé à {user.email}.",
-        )
-        return redirect(reverse("users:admin_space"))
-    users = User.objects.order_by("-date_joined")
-    return render(request, "users/admin_space.html", {
-        "form": form,
-        "users": users,
-        "total": users.count(),
-        "open_form": request.method == "POST",
-    })
 
 
 # ---------- API ----------

@@ -122,23 +122,11 @@ class RegisterForm(_AccountFieldsMixin, forms.Form):
         )
 
 
-# ---------- US-05 : l'admin crée un compte et attribue un rôle ----------
+# ---------- US-05 : création d'un compte par l'admin (admin Django et API) ----------
 
-class AdminCreateUserForm(_AccountFieldsMixin, forms.Form):
-    first_name = forms.CharField(label="Prénom", max_length=150, error_messages=NAME_ERRORS,
-                                 widget=forms.TextInput(attrs={"placeholder": "Prénom"}))
-    last_name = forms.CharField(label="Nom", max_length=150, error_messages=NAME_ERRORS,
-                                widget=forms.TextInput(attrs={"placeholder": "Nom"}))
-    email = forms.EmailField(label="E-mail", max_length=254, error_messages=EMAIL_ERRORS,
-                             widget=forms.EmailInput(attrs={"placeholder": "prenom.nom@dochub.tn"}))
-    role = forms.ChoiceField(label="Rôle", choices=User.Role.choices, initial=User.Role.UTILISATEUR,
-                             error_messages={"required": "Choisissez un rôle.",
-                                             "invalid_choice": "Rôle invalide."})
-    statut = forms.ChoiceField(label="Statut du compte", choices=User.Statut.choices,
-                               initial=User.Statut.OUVERT,
-                               error_messages={"required": "Choisissez un statut.",
-                                               "invalid_choice": "Statut invalide."})
-
+# Un compte ne peut pas être créé « Suspendu » (il faudrait une date de fin) :
+# la suspension se fait en modifiant un compte existant (admin Django).
+CREATION_STATUTS = [(v, l) for v, l in User.Statut.choices if v != User.Statut.SUSPENDU]
 
 # ---------- Activation : l'utilisateur créé par l'admin choisit son mot de passe ----------
 
