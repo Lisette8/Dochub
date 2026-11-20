@@ -10,7 +10,10 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 User = get_user_model()
-PASSWORD = "MotDePasse-Test-123"
+from .testing import make_password, make_short_password
+
+PASSWORD = make_password()      # généré à chaque exécution, jamais écrit en dur
+NEW_PASSWORD = make_password()
 
 
 def make_user(email="user@dochub.test", role=User.Role.UTILISATEUR, **kw):
@@ -181,13 +184,13 @@ class AdminCrudTests(TestCase):
         self.assertIn("/activer/", mail.outbox[0].body)
 
     def test_create_admin_with_password(self):
-        r = self.client.post(self.add_url, self.add_data(role="ADMIN", password1="Un-Mdp-Solide-42",
-                                                         password2="Un-Mdp-Solide-42"))
+        r = self.client.post(self.add_url, self.add_data(role="ADMIN", password1=NEW_PASSWORD,
+                                                         password2=NEW_PASSWORD))
         self.assertEqual(r.status_code, 302)
         user = User.objects.get(email="lina@dochub.test")
         self.assertTrue(user.is_admin)
         self.assertTrue(user.is_staff)
-        self.assertTrue(user.check_password("Un-Mdp-Solide-42"))
+        self.assertTrue(user.check_password(NEW_PASSWORD))
         self.assertEqual(len(mail.outbox), 0)
 
     def test_create_validation(self):
@@ -196,8 +199,8 @@ class AdminCrudTests(TestCase):
             ({"email": "pas-un-email"}, "Saisissez une adresse"),
             ({"first_name": "L1na"}, "Lettres, espaces, apostrophes et tirets uniquement."),
             ({"last_name": ""}, "Ce champ est obligatoire."),
-            ({"password1": "Un-Mdp-Solide-42", "password2": "autre"}, "Les deux mots de passe ne correspondent pas."),
-            ({"password1": "123", "password2": "123"}, "Ce mot de passe est trop court"),
+            ({"password1": NEW_PASSWORD, "password2": make_password()}, "Les deux mots de passe ne correspondent pas."),
+            ({"password1": (short := make_short_password()), "password2": short}, "Ce mot de passe est trop court"),
             ({"statut": "SUSPENDU"}, "Sélectionnez un choix valide"),
             ({"role": "SUPERADMIN"}, "Sélectionnez un choix valide"),
         ]

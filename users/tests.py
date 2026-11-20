@@ -7,7 +7,10 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 User = get_user_model()
-PASSWORD = "MotDePasse-Test-123"
+from .testing import make_password, make_short_password
+
+PASSWORD = make_password()      # généré à chaque exécution, jamais écrit en dur
+NEW_PASSWORD = make_password()
 
 
 def make_user(email="user@dochub.test", role=User.Role.UTILISATEUR, **kw):
@@ -164,7 +167,7 @@ class JWTTests(TestCase):
 
     def test_wrong_credentials_give_401(self):
         r = self.api.post(reverse("users:token_obtain"),
-                          {"email": "user@dochub.test", "password": "mauvais"}, format="json")
+                          {"email": "user@dochub.test", "password": make_password()}, format="json")
         self.assertEqual(r.status_code, 401)
 
     def test_deactivated_account_gets_no_token(self):
@@ -187,7 +190,7 @@ class RegisterTests(TestCase):
 
     def data(self, **kw):
         d = {"first_name": "Lina", "last_name": "Bouzid", "email": "Lina.Bouzid@dochub.test",
-             "password1": "Un-Mot-De-Passe-Sur-9", "password2": "Un-Mot-De-Passe-Sur-9"}
+             "password1": NEW_PASSWORD, "password2": NEW_PASSWORD}
         d.update(kw)
         return d
 
@@ -210,8 +213,8 @@ class RegisterTests(TestCase):
             ({"email": "pas-un-email"}, "Saisissez une adresse email valide."),
             ({"first_name": ""}, "Ce champ est obligatoire."),
             ({"last_name": "B0uzid!"}, "Lettres, espaces, apostrophes et tirets uniquement."),
-            ({"password2": "autre-chose-123"}, "Les deux mots de passe ne correspondent pas."),
-            ({"password1": "123", "password2": "123"}, "Ce mot de passe est trop court"),
+            ({"password2": make_password()}, "Les deux mots de passe ne correspondent pas."),
+            ({"password1": (short := make_short_password()), "password2": short}, "Ce mot de passe est trop court"),
         ]
         for override, message in cases:
             with self.subTest(override=override):
@@ -239,9 +242,9 @@ class ActivationTests(TestCase):
         r = self.client.get(self.link, follow=True)  # Django redirige vers une URL sans le jeton
         self.assertTemplateUsed(r, "users/activate.html")
         form_url = r.redirect_chain[-1][0]
-        r = self.client.post(form_url, {"new_password1": "Nouveau-Mdp-2026", "new_password2": "Nouveau-Mdp-2026"})
+        r = self.client.post(form_url, {"new_password1": NEW_PASSWORD, "new_password2": NEW_PASSWORD})
         self.assertRedirects(r, reverse("users:login"))
-        r = self.client.post(reverse("users:login"), {"username": "youssef@dochub.test", "password": "Nouveau-Mdp-2026"})
+        r = self.client.post(reverse("users:login"), {"username": "youssef@dochub.test", "password": NEW_PASSWORD})
         self.assertRedirects(r, reverse("users:dashboard"))
         # Le lien ne fonctionne qu'une fois
         self.client.post(reverse("users:logout"))
@@ -249,7 +252,7 @@ class ActivationTests(TestCase):
 
     def test_activation_form_validation(self):
         form_url = self.client.get(self.link, follow=True).redirect_chain[-1][0]
-        r = self.client.post(form_url, {"new_password1": "Nouveau-Mdp-2026", "new_password2": "autre"})
+        r = self.client.post(form_url, {"new_password1": NEW_PASSWORD, "new_password2": make_password()})
         self.assertContains(r, "Les deux mots de passe ne correspondent pas.")
         r = self.client.post(form_url, {"new_password1": "", "new_password2": ""})
         self.assertContains(r, "Le mot de passe est obligatoire.")
