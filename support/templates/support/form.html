@@ -1,11 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Nouveau ticket{% endif %} — DocHub{% endblock %}
 {% block nav_support %}active{% endblock %}
 {% block content %}
-<style>
-  .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: vertical; }
-  .field textarea:focus { outline: none; border-color: var(--indigo); }
-</style>
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
 
 <div class="page-head">
   <div>

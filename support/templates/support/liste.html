@@ -1,14 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Support — DocHub{% endblock %}
 {% block nav_support %}active{% endblock %}
 {% block content %}
-<style>
-  .tickets { width: 100%; border-collapse: collapse; }
-  .tickets th, .tickets td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); }
-  .tickets th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  .tickets tr:last-child td { border-bottom: 0; }
-  .empty { text-align: center; color: var(--muted); padding: 32px 0; }
-</style>
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
 
 <div class="page-head">
   <div>
