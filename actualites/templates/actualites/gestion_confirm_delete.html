@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Supprimer l'actualité — DocHub{% endblock %}
+{% block nav_actualites_admin %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Supprimer cette actualité ?</h1>
+    <p><a href="{% url 'actualites:gestion_liste' %}">← Gestion des actualités</a></p>
+  </div>
+</div>
+
+<div class="card form-grid">
+  <p><strong>{{ object.titre }}</strong> <span class="cell-hint">{{ object.get_categorie_display }} · {{ object.get_statut_display }}</span></p>
+  <p class="sub">Cette suppression est définitive. Pour la retirer seulement de la vue des utilisateurs, repassez-la en brouillon.</p>
+  <form method="post" class="form-actions">
+    {% csrf_token %}
+    <a class="btn secondary" href="{% url 'actualites:gestion_liste' %}">Annuler</a>
+    <button class="btn danger" type="submit">Oui, supprimer</button>
+  </form>
+</div>
+{% endblock %}

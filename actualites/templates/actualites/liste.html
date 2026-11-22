@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Actualités — DocHub{% endblock %}
+{% block nav_actualites %}active{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'actualites/css/actualites.css' %}">
+
+<div class="page-head">
+  <div>
+    <h1>Actualités</h1>
+    <p>Les dernières informations de la plateforme</p>
+  </div>
+</div>
+
+{% if actualites %}
+<div class="grid grid-2">
+  {% for a in actualites %}
+  <article class="card actu">
+    <div class="actu-meta">
+      <span class="badge">{{ a.get_categorie_display }}</span>
+      {% if a.epinglee %}<span class="badge ok">Épinglée</span>{% endif %}
+    </div>
+    <h2><a href="{% url 'actualites:detail' a.pk %}">{{ a.titre }}</a></h2>
+    <p class="sub">{{ a.description|truncatechars:160 }}</p>
+    <div class="cell-hint">{{ a.created_at|date:"d/m/Y" }}</div>
+  </article>
+  {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pager">
+  {% if page_obj.has_previous %}<a class="btn secondary" href="{% querystring page=page_obj.previous_page_number %}">Précédent</a>{% endif %}
+  <span>Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="btn secondary" href="{% querystring page=page_obj.next_page_number %}">Suivant</a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card"><p class="empty">Aucune actualité publiée pour le moment.</p></div>
+{% endif %}
+{% endblock %}

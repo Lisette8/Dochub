@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load evenements_extras %}
+{% block title %}{% if evenement %}Modifier l'événement{% else %}Créer un événement{% endif %} — DocHub{% endblock %}
+{% block extra_css %}{% include "evenements/_styles.html" %}{% endblock %}
+{% block nav_admin_evenements %}active{% endblock %}
+
+{% block content %}
+<div class="ev-page ev-form">
+  <div class="ev-crumb">
+    <a href="{% url 'evenements:gestion' %}">Événements</a> /
+    {% if evenement %}<a href="{% url 'evenements:detail' evenement.pk %}">{{ evenement.titre|truncatechars:40 }}</a> / Modifier{% else %}Créer un événement{% endif %}
+  </div>
+  <div class="page-head">
+    <div>
+      <div class="ev-title-row">
+        <h1>{% if evenement %}Modifier l'événement{% else %}Créer un événement{% endif %}</h1>
+        <span class="badge vue-admin">{% include "partials/icon.html" with name="shield" %} Vue administrateur</span>
+      </div>
+      <p>Renseignez les informations : l'événement apparaîtra dans le calendrier de tous les utilisateurs.</p>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert ev-form-errors">{% for e in form.non_field_errors %}{{ e }} {% endfor %}</div>
+  {% elif form.errors %}
+    <div class="alert ev-form-errors">Le formulaire contient des erreurs : vérifiez les champs signalés en rouge.</div>
+  {% endif %}
+
+  <form method="post" novalidate id="ev-form">
+    {% csrf_token %}
+    <div class="ev-layout">
+      {# ================= Colonne gauche : les champs ================= #}
+      <div class="ev-col">
+        <section class="card ev-hover">
+          <h2>Informations générales</h2>
+          <p class="sub">Les champs marqués d'un <span style="color:var(--danger)">*</span> sont obligatoires.</p>
+
+          <div class="ev-field{% if form.titre.errors %} has-error{% endif %}">
+            <label class="ev-label" for="{{ form.titre.id_for_label }}">
+              <span>Titre <span class="req">*</span></span>
+              <span class="ev-counter" data-compteur="{{ form.titre.id_for_label }}" data-max="200">0 / 200</span>
+            </label>
+            {{ form.titre }}
+            {% for e in form.titre.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="ev-field{% if form.description.errors %} has-error{% endif %}">
+            <label class="ev-label" for="{{ form.description.id_for_label }}"><span>Description</span></label>
+            {{ form.description }}
+            <div class="ev-help">Facultatif — texte libre, sans limite de longueur.</div>
+            {% for e in form.description.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </section>
+
+        <section class="card ev-hover">
+          <h2>Date et lieu</h2>
+          <p class="sub">Les dates sont à l'heure de Tunis.</p>
+
+          <div class="ev-form-grid">
+            <div class="ev-field{% if form.date_evenement.errors %} has-error{% endif %}">
+              <label class="ev-label" for="{{ form.date_evenement.id_for_label }}"><span>Date et heure de début <span class="req">*</span></span></label>
+              {{ form.date_evenement }}
+              {% for e in form.date_evenement.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="ev-field{% if form.date_fin.errors %} has-error{% endif %}">
+              <label class="ev-label" for="{{ form.date_fin.id_for_label }}"><span>Date et heure de fin</span></label>
+              {{ form.date_fin }}
+              <div class="ev-help">Facultatif — laissez vide pour un événement sans heure de fin.</div>
+              {% for e in form.date_fin.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <div class="ev-field{% if form.lieu.errors %} has-error{% endif %}">
+            <label class="ev-label" for="{{ form.lieu.id_for_label }}">
+              <span>Lieu <span class="req">*</span></span>
+              <span class="ev-counter" data-compteur="{{ form.lieu.id_for_label }}" data-max="255">0 / 255</span>
+            </label>
+            <div class="ev-input-icon">{% include "partials/icon.html" with name="pin" %}{{ form.lieu }}</div>
+            {% for e in form.lieu.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </section>
+
+        <section class="card ev-hover">
+          <h2>Inscriptions</h2>
+          <p class="sub">Les inscriptions se ferment automatiquement quand la capacité est atteinte.</p>
+
+          <div class="ev-field{% if form.capacite.errors %} has-error{% endif %}">
+            <label class="ev-label" for="{{ form.capacite.id_for_label }}"><span>Capacité (places)</span></label>
+            <div class="ev-stepper">
+              <button type="button" class="ev-step" data-pas="-1" aria-label="Retirer une place">{% include "partials/icon.html" with name="minus" %}</button>
+              <div class="ev-field-cap">{{ form.capacite }}</div>
+              <button type="button" class="ev-step" data-pas="1" aria-label="Ajouter une place">{% include "partials/icon.html" with name="plus" %}</button>
+            </div>
+            <div class="ev-presets">
+              <button type="button" class="ev-preset" data-valeur="10">10 places</button>
+              <button type="button" class="ev-preset" data-valeur="20">20 places</button>
+              <button type="button" class="ev-preset" data-valeur="30">30 places</button>
+              <button type="button" class="ev-preset" data-valeur="50">50 places</button>
+              <button type="button" class="ev-preset" data-valeur="100">100 places</button>
+              <button type="button" class="ev-preset" data-valeur="">Illimitée</button>
+            </div>
+            {% if evenement %}<div class="ev-help">Actuellement {{ evenement.nombre_participants }} inscrit{{ evenement.nombre_participants|pluralize }} : la capacité ne peut pas être inférieure.</div>{% endif %}
+            {% for e in form.capacite.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </section>
+
+        <div class="ev-form-actions">
+          <a class="btn secondary" href="{% if evenement %}{% url 'evenements:detail' evenement.pk %}{% else %}{% url 'evenements:gestion' %}{% endif %}">Annuler</a>
+          <button type="submit" class="btn">{% include "partials/icon.html" with name="check" %} {% if evenement %}Enregistrer les modifications{% else %}Créer l'événement{% endif %}</button>
+        </div>
+      </div>
+
+      {# ================= Colonne droite : aperçu en direct ================= #}
+      <div class="ev-col">
+        <aside class="card ev-hover">
+          <p class="ev-apercu-label">Aperçu</p>
+          <p class="sub" style="margin-bottom:0">Comme dans la liste « À venir » des utilisateurs</p>
+          <div class="ev-preview">
+            <div class="ev-item">
+              <div class="ev-date">
+                <span class="jour" id="ap-jour">--</span>
+                <span class="mois" id="ap-mois">MOIS</span>
+              </div>
+              <div class="ev-item-body">
+                <span class="ev-item-title" id="ap-titre">Titre de l'événement</span>
+                <div class="ev-meta">
+                  <span>{% include "partials/icon.html" with name="pin" %} <span id="ap-lieu">Lieu à définir</span></span>
+                  <span>{% include "partials/icon.html" with name="clock" %} <span id="ap-horaire">Horaire à définir</span></span>
+                </div>
+              </div>
+            </div>
+            <p class="ev-preview-desc" id="ap-desc">La description apparaîtra ici.</p>
+            <div class="ev-places">
+              <div class="ev-places-top"><span id="ap-places">0 participant · capacité illimitée</span><span class="pct" id="ap-pct">0%</span></div>
+              <div class="ev-bar"><span id="ap-barre" style="width: 0%"></span></div>
+            </div>
+          </div>
+        </aside>
+
+        <aside class="card ev-hover">
+          <h2>Renseigné automatiquement</h2>
+          <p class="sub">Ces informations sont ajoutées par le système à l'enregistrement.</p>
+          <dl class="info-list ev-info">
+            <div><dt>Créé par</dt><dd>{% if evenement %}{% if evenement.cree_par %}{{ evenement.cree_par.get_full_name|default:evenement.cree_par.email }}{% else %}—{% endif %}{% else %}{{ user.get_full_name|default:user.email }}{% endif %}</dd></div>
+            <div><dt>Créé le</dt><dd>{% if evenement %}{{ evenement.created_at|date:"d/m/Y · H:i" }}{% else %}{{ maintenant|date:"d/m/Y · H:i" }}{% endif %}</dd></div>
+            <div><dt>Mis à jour le</dt><dd>{% if evenement %}{{ evenement.updated_at|date:"d/m/Y · H:i" }}{% else %}{{ maintenant|date:"d/m/Y · H:i" }}{% endif %}</dd></div>
+          </dl>
+        </aside>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Formulaire événement : compteurs de caractères, capacité (− / + / raccourcis)
+  // et aperçu en direct. JavaScript natif, sans librairie.
+  (function () {
+    var form = document.getElementById("ev-form");
+    if (!form) { return; }
+    var champ = function (nom) { return form.querySelector('[name="' + nom + '"]'); };
+    var titre = champ("titre"), desc = champ("description"), lieu = champ("lieu");
+    var debut = champ("date_evenement"), fin = champ("date_fin"), cap = champ("capacite");
+    var inscrits = {{ evenement.nombre_participants|default:0 }};
+    var MOIS = ["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"];
+    var $ = function (id) { return document.getElementById(id); };
+
+    function compteurs() {
+      form.querySelectorAll("[data-compteur]").forEach(function (el) {
+        var input = document.getElementById(el.dataset.compteur);
+        var n = input ? input.value.length : 0, max = parseInt(el.dataset.max, 10);
+        el.textContent = n + " / " + max;
+        el.classList.toggle("limite", n >= max);
+      });
+    }
+
+    function heure(d) { return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+
+    function apercu() {
+      $("ap-titre").textContent = titre.value.trim() || "Titre de l'événement";
+      $("ap-titre").classList.toggle("ev-placeholder", !titre.value.trim());
+      $("ap-lieu").textContent = lieu.value.trim() || "Lieu à définir";
+      var texte = desc.value.trim();
+      $("ap-desc").textContent = texte ? (texte.length > 140 ? texte.slice(0, 140) + "…" : texte) : "La description apparaîtra ici.";
+
+      var d = debut.value ? new Date(debut.value) : null;
+      if (d && !isNaN(d)) {
+        $("ap-jour").textContent = d.getDate();
+        $("ap-mois").textContent = MOIS[d.getMonth()];
+        var h = heure(d), f = fin.value ? new Date(fin.value) : null;
+        if (f && !isNaN(f)) { h += " – " + (f.toDateString() === d.toDateString() ? heure(f) : f.toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"}) + " " + heure(f)); }
+        $("ap-horaire").textContent = h;
+      } else {
+        $("ap-jour").textContent = "--"; $("ap-mois").textContent = "MOIS"; $("ap-horaire").textContent = "Horaire à définir";
+      }
+
+      var c = parseInt(cap.value, 10);
+      var pluriel = inscrits === 1 ? "" : "s";   // même règle que le filtre pluralize de Django
+      if (c > 0) {
+        var pct = Math.min(Math.round(inscrits * 100 / c), 100);
+        $("ap-places").textContent = inscrits + " / " + c + " participant" + pluriel;
+        $("ap-pct").textContent = pct + "%";
+        $("ap-barre").style.width = pct + "%";
+      } else {
+        $("ap-places").textContent = inscrits + " participant" + pluriel + " · capacité illimitée";
+        $("ap-pct").textContent = "";
+        $("ap-barre").style.width = "0%";
+      }
+      form.querySelectorAll(".ev-preset").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.valeur === (c > 0 ? String(c) : ""));
+      });
+    }
+
+    form.querySelectorAll(".ev-step").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = (parseInt(cap.value, 10) || 0) + parseInt(b.dataset.pas, 10);
+        cap.value = v >= 1 ? v : "";
+        apercu();
+      });
+    });
+    form.querySelectorAll(".ev-preset").forEach(function (b) {
+      b.addEventListener("click", function () { cap.value = b.dataset.valeur; apercu(); });
+    });
+    // Dates : le calendrier du navigateur grise les dates passées.
+    // - fin   : jamais avant maintenant, ni avant le début ;
+    // - début : jamais avant maintenant, seulement à la création.
+    // (La vraie vérification est faite par le serveur dans forms.py / models.py.)
+    function versInput(d) {
+      var z = function (n) { return String(n).padStart(2, "0"); };
+      return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes());
+    }
+    var estCreation = {% if evenement %}false{% else %}true{% endif %};
+    function bornesDates() {
+      var maintenant = versInput(new Date());
+      if (estCreation) { debut.min = maintenant; }
+      fin.min = (debut.value && debut.value > maintenant) ? debut.value : maintenant;
+    }
+
+    form.addEventListener("input", function () { compteurs(); apercu(); bornesDates(); });
+    compteurs(); apercu(); bornesDates();
+  })();
+</script>
+{% endblock %}

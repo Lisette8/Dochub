@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load evenements_extras %}
+{% block title %}Gestion des événements — DocHub{% endblock %}
+{% block extra_css %}{% include "evenements/_styles.html" %}{% endblock %}
+{% block nav_admin_evenements %}active{% endblock %}
+
+{% block content %}
+<div class="ev-page ev-gestion">
+  <div class="page-head">
+    <div>
+      <div class="ev-title-row">
+        <h1>Gestion des événements</h1>
+        <span class="badge vue-admin">{% include "partials/icon.html" with name="shield" %} Vue administrateur</span>
+      </div>
+      <p>Créez, modifiez et supprimez les événements, et suivez leurs participants</p>
+    </div>
+    <a class="btn" href="{% url 'evenements:creer' %}">{% include "partials/icon.html" with name="plus" %} Créer un événement</a>
+  </div>
+
+  {# ================= Indicateurs ================= #}
+  <div class="grid grid-4 ev-stats">
+    <div class="card stat ev-hover">
+      <div class="stat-top">Événements <span class="stat-icon">{% include "partials/icon.html" with name="calendar" %}</span></div>
+      <div class="stat-value">{{ stats.total }}</div>
+      <div class="stat-hint">{{ stats.a_venir }} à venir</div>
+    </div>
+    <div class="card stat ev-hover">
+      <div class="stat-top">À venir <span class="stat-icon">{% include "partials/icon.html" with name="clock" %}</span></div>
+      <div class="stat-value">{{ stats.a_venir }}</div>
+      <div class="stat-hint">{{ stats.complets }} complet{{ stats.complets|pluralize }}</div>
+    </div>
+    <div class="card stat ev-hover">
+      <div class="stat-top">Inscriptions <span class="stat-icon">{% include "partials/icon.html" with name="users" %}</span></div>
+      <div class="stat-value">{{ stats.inscriptions }}</div>
+      <div class="stat-hint">tous événements confondus</div>
+    </div>
+  </div>
+
+  {# ================= Tableau des événements ================= #}
+  <section class="card ev-hover">
+    <div class="ev-toolbar">
+      <nav class="ev-seg" aria-label="Filtrer les événements">
+        {% for f in filtres %}
+          <a href="?filtre={{ f.code }}{% if recherche %}&amp;q={{ recherche|urlencode }}{% endif %}" class="{% if f.code == filtre %}active{% endif %}">{{ f.libelle }} <span class="count">{{ f.nombre }}</span></a>
+        {% endfor %}
+      </nav>
+      <form class="ev-search" method="get" role="search">
+        {% include "partials/icon.html" with name="search" %}
+        <input type="hidden" name="filtre" value="{{ filtre }}">
+        <input type="search" name="q" value="{{ recherche }}" placeholder="Rechercher un titre ou un lieu…" aria-label="Rechercher un événement">
+      </form>
+    </div>
+
+    {% if evenements %}
+      <div class="ev-table-wrap">
+        <table class="ev-table">
+          <thead>
+            <tr>
+              <th>Événement</th>
+              <th>Date</th>
+              <th>Participants</th>
+              <th>Statut</th>
+              <th class="right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for evt in evenements %}
+              <tr>
+                <td class="ev-gestion-title" data-label="Événement">
+                  <a href="{% url 'evenements:detail' evt.pk %}">{{ evt.titre }}</a>
+                  <div class="ev-meta"><span>{% include "partials/icon.html" with name="pin" %} {{ evt.lieu }}</span></div>
+                </td>
+                <td class="ev-date-cell" data-label="Date">
+                  <div>{{ evt.date_evenement|date:"d/m/Y" }}</div>
+                  <div class="ev-meta"><span>{% include "partials/icon.html" with name="clock" %} {{ evt|horaire }}</span></div>
+                </td>
+                <td data-label="Participants">{% include "evenements/_places.html" %}</td>
+                <td data-label="Statut">
+                  <span class="badge {% if evt.est_a_venir %}avenir{% elif evt.est_en_cours %}encours{% else %}passe{% endif %}">{{ evt.statut }}</span>
+                  {% if evt.est_a_venir and evt.est_complet %}<span class="badge complet">Complet</span>
+                  {% elif evt.est_a_venir and evt.presque_complet %}<span class="badge presque">Presque complet</span>{% endif %}
+                </td>
+                <td class="right" data-label="Actions">
+                  <div class="ev-icon-actions">
+                    <a class="ev-icon-btn" href="{% url 'evenements:detail' evt.pk %}#participants" title="Voir les participants" aria-label="Voir les participants">{% include "partials/icon.html" with name="users" %}</a>
+                    <a class="ev-icon-btn" href="{% url 'evenements:modifier' evt.pk %}" title="Modifier" aria-label="Modifier">{% include "partials/icon.html" with name="edit" %}</a>
+                    <a class="ev-icon-btn danger" href="{% url 'evenements:supprimer' evt.pk %}" title="Supprimer" aria-label="Supprimer">{% include "partials/icon.html" with name="trash" %}</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="ev-empty">
+        {% if recherche %}Aucun événement ne correspond à « {{ recherche }} ».
+        {% else %}Aucun événement pour le moment. Cliquez sur « Créer un événement » pour commencer.{% endif %}
+      </p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
