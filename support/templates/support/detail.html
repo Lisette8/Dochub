@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Ticket #{{ ticket.pk }} — DocHub{% endblock %}
 {% block nav_support %}active{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
+
 <div class="page-head">
   <div>
     <h1>#{{ ticket.pk }} — {{ ticket.titre }}</h1>
@@ -32,4 +35,21 @@
     </dl>
   </div>
 </div>
+
+<div class="card fil">
+  <h2>Discussion</h2>
+  {% for c in commentaires %}
+  <div class="message {% if c.auteur_id == ticket.auteur_id %}moi{% else %}support{% endif %}">
+    <div class="message-head">
+      <strong>{% if c.auteur_id == ticket.auteur_id %}Vous{% else %}{{ c.auteur.get_full_name }}{% endif %}</strong>
+      {% if c.auteur_id != ticket.auteur_id %}<span class="badge admin">Support</span>{% endif %}
+      <span class="message-date">{{ c.created_at|date:"d/m/Y à H:i" }}</span>
+    </div>
+    <div class="message-body">{{ c.contenu|linebreaks }}</div>
+  </div>
+  {% empty %}
+  <p class="empty">Aucune réponse pour le moment.</p>
+  {% endfor %}
+</div>
+
 {% endblock %}

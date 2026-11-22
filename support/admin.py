@@ -2,7 +2,21 @@ from django.contrib import admin
 
 from users.permissions import user_is_admin
 
-from .models import Ticket
+from .models import Commentaire, Ticket
+
+
+class CommentaireInline(admin.StackedInline):
+    model = Commentaire
+    extra = 1
+    fields = ("auteur", "contenu", "created_at")
+    readonly_fields = ("auteur", "created_at")
+
+    # Les messages envoyés ne sont ni modifiables ni supprimables (traçabilité)
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Ticket)
@@ -44,3 +58,27 @@ class TicketAdmin(admin.ModelAdmin):
         if not change:
             obj.auteur = request.user
         super().save_model(request, obj, form, change)
+
+    def get_inlines(self, request, obj):
+        # Pas de fil de discussion tant que le ticket n'est pas créé
+        return [CommentaireInline] if obj else []
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        reponse_envoyee = False
+        for instance in instances:
+            # Un nouveau commentaire a pour auteur l'admin connecté
+            if isinstance(instance, Commentaire) and instance.pk is None:
+                instance.auteur = request.user
+                reponse_envoyee = True
+            instance.save()
+        formset.save_m2m()
+
+        # Statut automatique, sauf si l'admin l'a changé lui-même dans ce formulaire
+        if reponse_envoyee and "statut" not in form.changed_data:
+            ticket = form.instance
+            if ticket.maj_statut_apres_reponse(par_admin=True):
+                self.message_user(
+                    request,
+                    f"Réponse envoyée : le ticket passe à « {ticket.get_statut_display()} ».",
+                )

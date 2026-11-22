@@ -38,6 +38,11 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         # Un utilisateur ne peut ouvrir que ses propres tickets (sinon 404)
         return Ticket.objects.filter(auteur=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["commentaires"] = self.object.commentaires.select_related("auteur")
+        return context
+
 
 class TicketUpdateView(LoginRequiredMixin, UpdateView):
     model = Ticket

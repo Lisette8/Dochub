@@ -61,3 +61,45 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f"#{self.pk} - {self.titre}"
+
+    def maj_statut_apres_reponse(self, par_admin):
+            """Applique la règle de changement de statut après une réponse.
+            Renvoie True si le statut a changé."""
+            ancien = self.statut
+            if par_admin:
+                if self.statut in (self.Statut.OUVERT, self.Statut.EN_COURS):
+                    self.statut = self.Statut.EN_ATTENTE
+            else:
+                if self.statut in (self.Statut.EN_ATTENTE, self.Statut.RESOLU):
+                    self.statut = self.Statut.EN_COURS
+            if self.statut != ancien:
+                self.save(update_fields=["statut", "updated_at"])
+                return True
+            return False
+
+
+
+
+class Commentaire(models.Model):
+    ticket = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name="commentaires",
+        verbose_name="ticket",
+    )
+    auteur = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="commentaires_support",
+        verbose_name="auteur",
+    )
+    contenu = models.TextField("message")
+    created_at = models.DateTimeField("envoyé le", auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "commentaire"
+        verbose_name_plural = "commentaires"
+
+    def __str__(self):
+        return f"Commentaire #{self.pk} sur le ticket #{self.ticket_id}"

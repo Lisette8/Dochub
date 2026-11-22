@@ -7,3 +7,12 @@
 
 .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: vertical; }
 .field textarea:focus { outline: none; border-color: var(--indigo); }
+
+/* Fil de discussion */
+.fil { margin-top: 16px; }
+.message { padding: 12px 14px; border-radius: 12px; margin-top: 12px; border: 1px solid var(--border); }
+.message.moi { background: var(--bg); }
+.message.support { background: var(--indigo-soft); border-color: var(--brume); }
+.message-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.message-date { margin-left: auto; font-size: .8rem; color: var(--muted); }
+.message-body p { margin: 4px 0; }
