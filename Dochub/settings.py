@@ -15,6 +15,7 @@ from datetime import timedelta
 
 import environ
 import oracledb
+from django.core.management.utils import get_random_secret_key
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,12 +28,15 @@ environ.Env.read_env(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-change-me")
+# La clé vient du fichier .env ; sans clé, une clé aléatoire est générée à chaque démarrage
+# (les utilisateurs sont alors déconnectés au redémarrage). Aucune clé dans le code.
+SECRET_KEY = env("SECRET_KEY", default="") or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# Vide + DEBUG : Django accepte seulement localhost. Ailleurs : ALLOWED_HOSTS=site1,site2 dans .env
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 
 # Application definition
@@ -110,9 +114,9 @@ else:
         "default": {
             "ENGINE": "django.db.backends.oracle",
             "NAME": oracledb.makedsn(
-                env("DB_HOST", default="localhost"),
-                env("DB_PORT", default="1521"),
-                service_name=env("DB_NAME", default="FREEPDB1"),
+                env("DB_HOST"),
+                env("DB_PORT"),
+                service_name=env("DB_NAME"),
             ),
             "USER": env("DB_USER"),
             "PASSWORD": env("DB_PASSWORD"),
@@ -191,3 +195,8 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+# Gestion des comptes (modifiable dans .env)
+SUSPENSION_JOURS = env.int("SUSPENSION_JOURS", default=7)    # durée de l'action « Suspendre »
+COMPTES_PAR_PAGE = env.int("COMPTES_PAR_PAGE", default=10)   # pages DocHub et admin Django
+HISTORIQUE_TAILLE = env.int("HISTORIQUE_TAILLE", default=10)  # lignes d'historique sur la fiche d'un compte
