@@ -26,8 +26,7 @@
 
       {% if user.is_admin %}
         <div class="nav-section">ADMINISTRATION</div>
-        {# La gestion des comptes se fait dans l'admin Django (CRUD, statuts, rôles). #}
-        <a href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+        <a href="{% url 'users:user_list' %}" class="{% block nav_users %}{% endblock %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
         <a class="disabled" title="Module Statistiques — à venir">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
       {% endif %}
     </nav>
