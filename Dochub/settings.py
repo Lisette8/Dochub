@@ -50,18 +50,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'actualites',
 
+    'DocumentApp',
     'support',
-
-
     'statistiques',
-    
-
-
-
      # Apps DocHub
     'evenements',
-
-
     # Librairies
     'rest_framework',
     'rest_framework_simplejwt',

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Documents — DocHub{% endblock %}
+{% block nav_documents %}active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Documents</h1>
+    <p>Liste des documents disponibles</p>
+  </div>
+  {% if user.is_staff %}
+  <div class="head-actions">
+    <a class="btn" href="{% url 'DocumentApp:ajouter' %}">Ajouter</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card table-card">
+  {% if documents %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Titre</th>
+        <th>Description</th>
+        <th>Créé le</th>
+        <th>Modifié le</th>
+        {% if user.is_staff %}<th></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for document in documents %}
+      <tr>
+        <td>{{ document.titreDocument }}</td>
+        <td>{{ document.descDocument }}</td>
+        <td>{{ document.created_at|date:"d/m/Y" }}</td>
+        <td>{{ document.updated_at|date:"d/m/Y" }}</td>
+        {% if user.is_staff %}
+        <td class="right"><a href="{% url 'DocumentApp:detail' document.pk %}">Détails</a></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">Aucun document disponible.</p>
+  {% endif %}
+</div>
+{% endblock %}

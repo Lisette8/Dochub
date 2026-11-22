@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.titreDocument }} — DocHub{% endblock %}
+{% block nav_documents %}active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ document.titreDocument }}</h1>
+    <p><a href="{% url 'DocumentApp:liste' %}">← Retour à la liste</a></p>
+  </div>
+  <div class="head-actions">
+    <a class="btn secondary" href="{% url 'DocumentApp:modifier' document.pk %}">Modifier</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Description</h2>
+  <p>{{ document.descDocument|default:"Aucune description." }}</p>
+
+  <dl class="info-list">
+    <div><dt>Créé le</dt><dd>{{ document.created_at|date:"d/m/Y" }}</dd></div>
+    <div><dt>Modifié le</dt><dd>{{ document.updated_at|date:"d/m/Y" }}</dd></div>
+  </dl>
+
+  <form method="post" action="{% url 'DocumentApp:supprimer' document.pk %}" class="form-actions">
+    {% csrf_token %}
+    <button class="btn danger" type="submit" onclick="return confirm('Voulez-vous vraiment supprimer ce document ?');">Supprimer</button>
+  </form>
+</div>
+{% endblock %}
