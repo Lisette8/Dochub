@@ -20,6 +20,8 @@
     <nav class="nav">
       <a href="{% url 'users:dashboard' %}" class="{% block nav_dashboard %}{% endblock %}">{% include "partials/icon.html" with name="home" %} Tableau de bord</a>
       <a class="disabled" title="Module Documents — à venir">{% include "partials/icon.html" with name="file" %} Documents</a>
+      <a href="{% url 'actualites:liste' %}" class="{% block nav_actualites %}{% endblock %}">{% include "partials/icon.html" with name="news" %} Actualités</a>
+
       <a class="disabled" title="Module Actualités — à venir">{% include "partials/icon.html" with name="news" %} Actualités</a>
 
       <a href="{% url 'evenements:liste' %}" class="{% block nav_evenements %}{% endblock %}">{% include "partials/icon.html" with name="calendar" %} Événements</a>
@@ -42,7 +44,7 @@
         <a href="{% url 'users:user_list' %}" class="{% block nav_users %}{% endblock %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
 
         <a class="disabled" title="Module Statistiques — à venir">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
-
+        <a href="{% url 'actualites:gestion_liste' %}" class="{% block nav_actualites_admin %}{% endblock %}">{% include "partials/icon.html" with name="news" %} Actualités</a>
       {% endif %}
     </nav>
 

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Modifier l'actualité{% else %}Nouvelle actualité{% endif %} — DocHub{% endblock %}
+{% block nav_actualites_admin %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if object %}Modifier l'actualité{% else %}Nouvelle actualité{% endif %}</h1>
+    <p><a href="{% url 'actualites:gestion_liste' %}">← Gestion des actualités</a></p>
+  </div>
+</div>
+
+<div class="card form-grid">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/field.html" with field=form.titre %}
+    <div class="field-row">
+      {% include "partials/field.html" with field=form.categorie %}
+      {% include "partials/field.html" with field=form.statut %}
+    </div>
+    {% include "partials/field.html" with field=form.description %}
+    {% include "partials/field.html" with field=form.epinglee %}
+    <div class="form-actions">
+      <a class="btn secondary" href="{% url 'actualites:gestion_liste' %}">Annuler</a>
+      <button class="btn" type="submit">{% if object %}Enregistrer{% else %}Créer l'actualité{% endif %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ actualite.titre }} — DocHub{% endblock %}
+{% block nav_actualites %}active{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'actualites/css/actualites.css' %}">
+
+<div class="page-head">
+  <div>
+    <h1>{{ actualite.titre }}</h1>
+    <p><a href="{% url 'actualites:liste' %}">← Retour aux actualités</a></p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="actu-meta">
+    <span class="badge">{{ actualite.get_categorie_display }}</span>
+    {% if actualite.epinglee %}<span class="badge ok">Épinglée</span>{% endif %}
+    <span class="cell-hint">Publiée le {{ actualite.created_at|date:"d/m/Y" }}</span>
+  </div>
+  <div class="actu-contenu">{{ actualite.description|linebreaks }}</div>
+</div>
+{% endblock %}

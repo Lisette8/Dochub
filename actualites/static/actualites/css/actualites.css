@@ -1,0 +1,5 @@
+.actu-meta { display: flex; gap: 8px; margin-bottom: 10px; }
+.actu h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.actu h2 a { color: var(--text); }
+.actu h2 a:hover { color: var(--indigo); }
+.actu-contenu { white-space: normal; line-height: 1.7; color: var(--text-2); }
