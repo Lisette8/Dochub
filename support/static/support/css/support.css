@@ -16,3 +16,4 @@
 .message-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .message-date { margin-left: auto; font-size: .8rem; color: var(--muted); }
 .message-body p { margin: 4px 0; }
+.reponse { margin-top: 20px; }

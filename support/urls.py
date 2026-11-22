@@ -9,4 +9,5 @@ urlpatterns = [
     path("nouveau/", views.TicketCreateView.as_view(), name="creer"),
     path("<int:pk>/", views.TicketDetailView.as_view(), name="detail"),
     path("<int:pk>/modifier/", views.TicketUpdateView.as_view(), name="modifier"),
+    path("<int:pk>/repondre/", views.TicketReplyView.as_view(), name="repondre"),
 ]
