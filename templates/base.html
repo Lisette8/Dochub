@@ -1,0 +1,70 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}DocHub{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/dochub.css' %}">
+</head>
+<body>
+{% block body %}
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="{% url 'users:dashboard' %}">{% include "partials/logo.html" %} DocHub</a>
+
+    {# Pour activer un lien : retirer class="disabled", mettre son URL, et ajouter un bloc        #}
+    {# comme nav_dashboard que la page surcharge avec {% block nav_xxx %}active{% endblock %}. #}
+    <nav class="nav">
+      <a href="{% url 'users:dashboard' %}" class="{% block nav_dashboard %}{% endblock %}">{% include "partials/icon.html" with name="home" %} Tableau de bord</a>
+      <a class="disabled" title="Module Documents — à venir">{% include "partials/icon.html" with name="file" %} Documents</a>
+      <a href="{% url 'actualites:liste' %}" class="{% block nav_actualites %}{% endblock %}">{% include "partials/icon.html" with name="news" %} Actualités</a>
+      <a class="disabled" title="Module Événements — à venir">{% include "partials/icon.html" with name="calendar" %} Événements</a>
+      <a href="{% url 'support:liste' %}" class="{% block nav_support %}{% endblock %}">{% include "partials/icon.html" with name="support" %} Support</a>
+      <a class="disabled" title="Assistant IA — à venir">{% include "partials/icon.html" with name="sparkle" %} Assistant IA</a>
+
+      {% if user.is_admin %}
+        <div class="nav-section">ADMINISTRATION</div>
+
+        {# La gestion des comptes se fait dans l'admin Django (CRUD, statuts, rôles). #}
+        <a href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+        <a href="{% url 'statistiques:compteurs' %}" class="{% block nav_stats %}{% endblock %}">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
+        <a href="{% url 'users:user_list' %}" class="{% block nav_users %}{% endblock %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+        <a class="disabled" title="Module Statistiques — à venir">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
+        <a href="{% url 'actualites:gestion_liste' %}" class="{% block nav_actualites_admin %}{% endblock %}">{% include "partials/icon.html" with name="news" %} Actualités</a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-user">
+      <span class="avatar">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
+      <div class="who">
+        <div class="name">{{ user.get_full_name }}</div>
+        <div class="role">{{ user.get_role_display }}</div>
+      </div>
+      <form method="post" action="{% url 'users:logout' %}">{% csrf_token %}
+        <button type="submit" class="icon-btn" title="Déconnexion" aria-label="Déconnexion">{% include "partials/icon.html" with name="logout" %}</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <label class="search">{% include "partials/icon.html" with name="search" %}
+        <input type="search" placeholder="Rechercher dans DocHub (recherche sémantique)…" aria-label="Rechercher">
+      </label>
+      <span class="spacer"></span>
+      <span class="icon-btn bell" title="Notifications">{% include "partials/icon.html" with name="bell" %}</span>
+      <span class="avatar">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
+    </header>
+    <main class="content">{% include "partials/messages.html" %}{% block content %}{% endblock %}</main>
+  </div>
+</div>
+{% endblock %}
+<script>
+  // Si le navigateur restaure la page depuis sa mémoire (bouton « Précédent »),
+  // on la recharge depuis le serveur pour appliquer la session actuelle.
+  window.addEventListener("pageshow", function (e) { if (e.persisted) { window.location.reload(); } });
+</script>
+</body>
+</html>

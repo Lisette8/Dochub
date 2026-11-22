@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Activer mon compte — DocHub{% endblock %}
+{% block body %}
+<div class="auth">
+  {% include "users/_auth_hero.html" %}
+  <section class="auth-panel">
+    {% if validlink %}
+      <form class="auth-form" method="post" novalidate>
+        {% csrf_token %}
+        <h2>Activer mon compte</h2>
+        <p class="lead">Choisissez le mot de passe de votre compte DocHub.</p>
+        {% if form.non_field_errors %}<div class="alert" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+        {% include "partials/field.html" with field=form.new_password1 %}
+        {% include "partials/field.html" with field=form.new_password2 %}
+        <button type="submit" class="btn block">Enregistrer le mot de passe</button>
+      </form>
+    {% else %}
+      <div class="auth-form">
+        <h2>Lien invalide</h2>
+        <p class="lead">Ce lien d'activation a déjà été utilisé ou n'est plus valide. Contactez l'administrateur.</p>
+        <a class="btn block" href="{% url 'users:login' %}">Retour à la connexion</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

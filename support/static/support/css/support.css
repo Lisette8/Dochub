@@ -1,0 +1,19 @@
+/* Module Support — styles propres au module */
+.tickets { width: 100%; border-collapse: collapse; }
+.tickets th, .tickets td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.tickets th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.tickets tr:last-child td { border-bottom: 0; }
+.empty { text-align: center; color: var(--muted); padding: 32px 0; }
+
+.field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: vertical; }
+.field textarea:focus { outline: none; border-color: var(--indigo); }
+
+/* Fil de discussion */
+.fil { margin-top: 16px; }
+.message { padding: 12px 14px; border-radius: 12px; margin-top: 12px; border: 1px solid var(--border); }
+.message.moi { background: var(--bg); }
+.message.support { background: var(--indigo-soft); border-color: var(--brume); }
+.message-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.message-date { margin-left: auto; font-size: .8rem; color: var(--muted); }
+.message-body p { margin: 4px 0; }
+.reponse { margin-top: 20px; }
