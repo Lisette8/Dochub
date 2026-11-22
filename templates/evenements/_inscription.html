@@ -1,0 +1,42 @@
+{# Actions d'un événement selon le rôle.                                              #}
+{# - Utilisateur : S'inscrire / ✓ Inscrit + Annuler / Complet / Terminé.             #}
+{# - Administrateur : badge "Organisateur" + "Voir les participants" (pas d'inscription). #}
+{# Variables : evt, inscrits, page_courante ; base_query et selection (page liste).   #}
+<div class="ev-actions">
+  {% if user.is_admin %}
+    <span class="badge organisateur">{% include "partials/icon.html" with name="shield" %} Organisateur</span>
+    {% if evt.presque_complet and evt.est_a_venir %}<span class="badge presque">Presque complet</span>{% elif evt.est_complet %}<span class="badge complet">Complet</span>{% endif %}
+    {% if base_query is not None %}
+      {% if selection and selection.pk == evt.pk %}
+        <a class="btn ev-btn-sm" href="?{{ base_query }}">{% include "partials/icon.html" with name="users" %} Participants affichés</a>
+      {% else %}
+        <a class="btn secondary ev-btn-sm" href="?{% if base_query %}{{ base_query }}&amp;{% endif %}participants={{ evt.pk }}#participants">{% include "partials/icon.html" with name="users" %} Voir les participants</a>
+      {% endif %}
+    {% endif %}
+
+  {% elif evt.pk in inscrits %}
+    <span class="badge inscrit">✓ Inscrit</span>
+    {% if evt.est_a_venir %}
+      <form method="post" action="{% url 'evenements:desinscription' evt.pk %}"
+            onsubmit="return confirm('Annuler votre inscription à « {{ evt.titre|escapejs }} » ?');">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ page_courante }}">
+        <button type="submit" class="ev-link-danger">Annuler</button>
+      </form>
+    {% endif %}
+
+  {% elif not evt.est_a_venir %}
+    <span class="badge {% if evt.est_en_cours %}encours{% else %}passe{% endif %}">{% if evt.est_en_cours %}En cours{% else %}Événement terminé{% endif %}</span>
+
+  {% elif evt.est_complet %}
+    <span class="badge complet">Complet</span>
+
+  {% else %}
+    {% if evt.presque_complet %}<span class="badge presque">Presque complet</span>{% endif %}
+    <form method="post" action="{% url 'evenements:inscription' evt.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ page_courante }}">
+      <button type="submit" class="btn ev-btn-sm">S'inscrire</button>
+    </form>
+  {% endif %}
+</div>

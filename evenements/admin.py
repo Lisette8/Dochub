@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import Evenement
+from .models import Evenement, Participation, avec_nb_inscrits
 
 
 class StatutEvenementFilter(admin.SimpleListFilter):
@@ -29,11 +29,21 @@ class StatutEvenementFilter(admin.SimpleListFilter):
         return queryset
 
 
+class ParticipationInline(admin.TabularInline):
+    """Liste des participants directement dans la fiche d'un événement."""
+
+    model = Participation
+    extra = 0
+    fields = ("utilisateur", "date_inscription", "present")
+    readonly_fields = ("date_inscription",)
+    autocomplete_fields = ("utilisateur",)
+
+
 @admin.register(Evenement)
 class EvenementAdmin(admin.ModelAdmin):
     # Colonnes affichées dans la liste (+ boutons Modifier / Supprimer)
     list_display = (
-        "titre", "date_evenement", "lieu", "a_venir",
+        "titre", "date_evenement", "lieu", "a_venir", "participants",
         "cree_par", "created_at", "boutons_actions",
     )
     list_display_links = ("titre",)
@@ -55,7 +65,8 @@ class EvenementAdmin(admin.ModelAdmin):
     # Formulaire de création / modification
     fieldsets = (
         ("Informations", {"fields": ("titre", "description")}),
-        ("Date et lieu", {"fields": ("date_evenement", "lieu")}),
+        ("Date et lieu", {"fields": ("date_evenement", "date_fin", "lieu")}),
+        ("Inscriptions", {"fields": ("capacite",)}),
         ("Suivi", {"fields": ("cree_par", "created_at", "updated_at")}),
     )
     readonly_fields = ("cree_par", "created_at", "updated_at")
@@ -63,12 +74,25 @@ class EvenementAdmin(admin.ModelAdmin):
     # Boutons "Enregistrer" et "Supprimer" aussi en haut du formulaire
     save_on_top = True
 
+    # Participants affichés en bas de la fiche de l'événement
+    inlines = [ParticipationInline]
+
+    def get_queryset(self, request):
+        # Nombre d'inscrits calculé en une seule requête SQL (compatible Oracle)
+        return avec_nb_inscrits(super().get_queryset(request))
+
     # ------------------------------------------------------------------
     # Colonnes calculées
     # ------------------------------------------------------------------
     @admin.display(boolean=True, description="À venir")
     def a_venir(self, obj):
         return obj.est_a_venir
+
+    @admin.display(description="Participants", ordering="nb_inscrits")
+    def participants(self, obj):
+        if obj.capacite is None:
+            return f"{obj.nb_inscrits} (illimité)"
+        return f"{obj.nb_inscrits} / {obj.capacite}"
 
     @admin.display(description="Actions")
     def boutons_actions(self, obj):
@@ -125,3 +149,23 @@ class EvenementAdmin(admin.ModelAdmin):
             f"{nb} événement(s) passé(s) supprimé(s).",
             messages.SUCCESS,
         )
+
+
+@admin.register(Participation)
+class ParticipationAdmin(admin.ModelAdmin):
+    """Gestion de toutes les inscriptions aux événements (US-28)."""
+
+    list_display = ("utilisateur", "evenement", "date_inscription", "present")
+    list_editable = ("present",)
+    list_filter = ("present", "evenement", "date_inscription")
+    search_fields = (
+        "utilisateur__email", "utilisateur__first_name", "utilisateur__last_name",
+        "evenement__titre",
+    )
+    autocomplete_fields = ("utilisateur", "evenement")
+    readonly_fields = ("date_inscription",)
+    date_hierarchy = "date_inscription"
+    list_select_related = ("utilisateur", "evenement")
+    list_per_page = 20
+
+    

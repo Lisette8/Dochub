@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load evenements_extras %}
+{% block title %}Événements — DocHub{% endblock %}
+{% block extra_css %}{% include "evenements/_styles.html" %}{% endblock %}
+{% block nav_evenements %}active{% endblock %}
+
+{% block content %}
+<div class="ev-page">
+  <div class="page-head">
+    <div>
+      <div class="ev-title-row">
+        <h1>Événements</h1>
+        {% if user.is_admin %}<span class="badge vue-admin">{% include "partials/icon.html" with name="shield" %} Vue administrateur</span>{% endif %}
+      </div>
+      <p>{% if user.is_admin %}Calendrier des activités et suivi des participants{% else %}Calendrier des activités et inscriptions{% endif %}</p>
+    </div>
+    {% if user.is_admin %}
+      <a class="btn" href="{% url 'evenements:creer' %}">{% include "partials/icon.html" with name="plus" %} Créer un événement</a>
+    {% endif %}
+  </div>
+
+  <div class="ev-layout">
+    {# ================= Colonne principale : calendrier ou liste ================= #}
+    <div class="ev-col">
+    <section class="card ev-hover">
+      <div class="ev-toolbar">
+        {% if vue == "mois" %}
+          <div class="ev-nav">
+            <a class="ev-arrow" href="?mois={{ mois_precedent }}" title="Mois précédent" aria-label="Mois précédent">{% include "partials/icon.html" with name="chevron-left" %}</a>
+            <h2>{{ mois_titre }}</h2>
+            <a class="ev-arrow" href="?mois={{ mois_suivant }}" title="Mois suivant" aria-label="Mois suivant">{% include "partials/icon.html" with name="chevron-right" %}</a>
+            {% if not est_mois_courant %}<a class="ev-today" href="{% url 'evenements:liste' %}">Aujourd'hui</a>{% endif %}
+          </div>
+        {% else %}
+          <nav class="ev-seg" aria-label="Filtrer les événements">
+            {% for f in filtres %}
+              <a href="?vue=liste&amp;filtre={{ f.code }}&amp;mois={{ mois_param }}" class="{% if f.code == filtre %}active{% endif %}">{{ f.libelle }} <span class="count">{{ f.nombre }}</span></a>
+            {% endfor %}
+          </nav>
+        {% endif %}
+
+        <nav class="ev-seg" aria-label="Mode d'affichage">
+          <a href="?mois={{ mois_param }}" class="{% if vue == 'mois' %}active{% endif %}">Mois</a>
+          <a href="?vue=liste&amp;mois={{ mois_param }}" class="{% if vue == 'liste' %}active{% endif %}">Liste</a>
+        </nav>
+      </div>
+
+      {% if vue == "mois" %}
+        {# ---------- Vue Mois : calendrier sans aucun défilement ---------- #}
+        <div class="ev-cal" role="grid" aria-label="Calendrier {{ mois_titre }}">
+          {% for j in jours_semaine %}<div class="ev-cal-head" role="columnheader">{{ j }}</div>{% endfor %}
+          {% for semaine in semaines %}
+            {% with rang_depuis_la_fin=forloop.revcounter %}
+            {% for jour in semaine %}
+              <div class="ev-cal-day{% if not jour.dans_le_mois %} hors-mois{% endif %}{% if jour.aujourd_hui and jour.dans_le_mois %} today{% endif %}{% if rang_depuis_la_fin == 1 %} derniere-ligne{% endif %}{% if rang_depuis_la_fin <= 2 %} vers-le-haut{% endif %}{% if jour.fin_de_semaine %} fin-semaine{% endif %}" role="gridcell">
+                {% if jour.dans_le_mois %}
+                  <span class="ev-cal-num">{{ jour.date.day }}</span>
+                  {% for evt in jour.evenements %}
+                    <div class="ev-tag">
+                      <a class="ev-chip {{ evt|couleur }}{% if not evt.est_a_venir %} passe{% endif %}{% if selection.pk == evt.pk %} selection{% endif %}" href="{% url 'evenements:detail' evt.pk %}">{{ evt.titre }}</a>
+                      {# Aperçu affiché au survol de l'étiquette #}
+                      <div class="ev-pop" role="tooltip">
+                        <strong>{{ evt.titre }}</strong>
+                        <div class="ev-meta">
+                          <span>{% include "partials/icon.html" with name="calendar" %} {{ evt.date_evenement|date:"l j F Y" }}</span>
+                          <span>{% include "partials/icon.html" with name="clock" %} {{ evt|horaire }}</span>
+                          <span>{% include "partials/icon.html" with name="pin" %} {{ evt.lieu }}</span>
+                        </div>
+                        {% include "evenements/_places.html" %}
+                        <div class="ev-pop-hint">{% if user.is_admin %}Vous êtes l'organisateur · {% elif evt.pk in inscrits %}✓ Vous êtes inscrit · {% endif %}Cliquez pour voir le détail</div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                  {% if jour.en_plus %}<span class="ev-more">+ {{ jour.en_plus }} autre{{ jour.en_plus|pluralize }}</span>{% endif %}
+                {% endif %}
+              </div>
+            {% endfor %}
+            {% endwith %}
+          {% endfor %}
+        </div>
+        <p class="ev-cal-foot">
+          {% if nb_evenements_mois %}{{ nb_evenements_mois }} événement{{ nb_evenements_mois|pluralize }} ce mois-ci. Survolez une étiquette pour un aperçu, cliquez pour le détail.
+          {% else %}Aucun événement prévu ce mois-ci.{% endif %}
+        </p>
+
+      {% else %}
+        {# ---------- Vue Liste : tous les événements, défilement vertical ---------- #}
+        <div class="ev-scroll">
+          {% regroup evenements by date_evenement|date:"F Y" as groupes %}
+          {% for groupe in groupes %}
+            <div class="ev-list-month">{{ groupe.grouper }}</div>
+            {% for evt in groupe.list %}
+              <article class="ev-row">
+                <div class="ev-date{% if not evt.est_a_venir %} passe{% endif %}">
+                  <span class="jour">{{ evt.date_evenement|date:"j" }}</span>
+                  <span class="mois">{{ evt.date_evenement|mois_court }}</span>
+                </div>
+                <div class="ev-row-body">
+                  <div class="ev-row-title">
+                    <a href="{% url 'evenements:detail' evt.pk %}">{{ evt.titre }}</a>
+                    <span class="badge {% if evt.est_a_venir %}avenir{% elif evt.est_en_cours %}encours{% else %}passe{% endif %}">{{ evt.statut }}</span>
+                  </div>
+                  <div class="ev-meta">
+                    <span>{% include "partials/icon.html" with name="calendar" %} {{ evt.date_evenement|date:"l j F Y" }}</span>
+                    <span>{% include "partials/icon.html" with name="clock" %} {{ evt|horaire }}</span>
+                    <span>{% include "partials/icon.html" with name="pin" %} {{ evt.lieu }}</span>
+                  </div>
+                  {% if evt.description %}<p class="ev-row-desc">{{ evt.description|truncatewords:24 }}</p>{% endif %}
+                  {% include "evenements/_places.html" %}
+                </div>
+                <div class="ev-row-side">
+                  {% include "evenements/_inscription.html" %}
+                  <a class="btn secondary ev-btn-sm" href="{% url 'evenements:detail' evt.pk %}">Voir le détail</a>
+                </div>
+              </article>
+            {% endfor %}
+          {% empty %}
+            <p class="ev-empty">
+              {% if filtre == "a_venir" %}Aucun événement à venir pour le moment.
+              {% elif filtre == "passes" %}Aucun événement passé.
+              {% else %}Aucun événement n'a encore été publié.{% endif %}
+            </p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    {# Administrateur : participants de l'événement choisi avec "Voir les participants" #}
+    {% if selection %}
+      {% with evt=selection %}
+        {% include "evenements/_participants.html" with url_fermer="?"|add:base_query %}
+      {% endwith %}
+    {% endif %}
+    </div>
+
+    {# ================= Colonne de droite : tous les événements à venir ================= #}
+    <aside class="card ev-side ev-hover">
+      <h2>À venir</h2>
+      <p class="sub">{% if user.is_admin %}Vos événements et leurs participants{% else %}Les prochains événements de la plateforme{% endif %}</p>
+      <div class="ev-scroll">
+        {% for evt in a_venir %}
+          <div class="ev-item{% if selection.pk == evt.pk %} selection{% endif %}">
+            <div class="ev-date">
+              <span class="jour">{{ evt.date_evenement|date:"j" }}</span>
+              <span class="mois">{{ evt.date_evenement|mois_court }}</span>
+            </div>
+            <div class="ev-item-body">
+              <a class="ev-item-title" href="{% url 'evenements:detail' evt.pk %}" title="{{ evt.titre }}">{{ evt.titre }}</a>
+              <div class="ev-meta">
+                <span>{% include "partials/icon.html" with name="pin" %} {{ evt.lieu }}</span>
+                <span>{% include "partials/icon.html" with name="clock" %} {{ evt|horaire }}</span>
+              </div>
+              {% include "evenements/_places.html" %}
+              {% include "evenements/_inscription.html" %}
+            </div>
+          </div>
+        {% empty %}
+          <p class="ev-empty">Aucun événement à venir pour le moment.</p>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

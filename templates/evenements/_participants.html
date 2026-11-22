@@ -1,0 +1,67 @@
+{# Tableau des participants d'un événement (réservé à l'administrateur).             #}
+{# Variables : evt (événement), participants, page_courante, url_fermer (facultatif). #}
+<section class="card ev-hover" id="participants">
+  <div class="ev-card-head">
+    <div>
+      <h2>Participants{% if url_fermer %} — {{ evt.titre }}{% endif %}</h2>
+      <p class="sub">
+        {{ evt.nombre_participants }} inscrit{{ evt.nombre_participants|pluralize }}
+        {% if evt.capacite is None %}· capacité illimitée
+        {% elif evt.est_complet %}· complet ({{ evt.capacite }} places)
+        {% else %}· {{ evt.places_restantes }} place{{ evt.places_restantes|pluralize }} restante{{ evt.places_restantes|pluralize }} sur {{ evt.capacite }}{% endif %}
+      </p>
+    </div>
+    <div class="ev-card-head-actions">
+      {% if url_fermer %}
+        <a class="btn secondary ev-btn-sm" href="{% url 'evenements:detail' evt.pk %}">Ouvrir la fiche</a>
+        <a class="ev-close" href="{{ url_fermer }}" title="Fermer" aria-label="Fermer">{% include "partials/icon.html" with name="x" %}</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include "evenements/_places.html" %}
+
+  {% if participants %}
+    <div class="ev-table-wrap">
+      <table class="ev-table">
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Participant</th>
+            <th>E-mail</th>
+            <th>Inscrit le</th>
+            <th class="right">Présence</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in participants %}
+            <tr>
+              <td class="num" data-label="#">{{ forloop.counter }}</td>
+              <td data-label="Participant">
+                <span class="ev-person">
+                  <span class="avatar sm">{{ p.utilisateur.first_name|slice:":1"|upper }}{{ p.utilisateur.last_name|slice:":1"|upper }}</span>
+                  <span class="ev-person-name">{{ p.utilisateur.get_full_name|default:p.utilisateur.email }}</span>
+                </span>
+              </td>
+              <td class="muted" data-label="E-mail"><a href="mailto:{{ p.utilisateur.email }}">{{ p.utilisateur.email }}</a></td>
+              <td class="muted" data-label="Inscrit le">{{ p.date_inscription|date:"d/m/Y à H:i" }}</td>
+              <td class="right" data-label="Présence">
+                <form method="post" action="{% url 'evenements:presence' p.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ page_courante }}">
+                  {% if p.present %}
+                    <button type="submit" class="ev-presence oui" title="Cliquer pour marquer absent">{% include "partials/icon.html" with name="check" %} Présent</button>
+                  {% else %}
+                    <button type="submit" class="ev-presence" title="Cliquer pour marquer présent">Non pointé</button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="ev-empty" style="margin-top:12px">Aucun participant inscrit pour le moment.</p>
+  {% endif %}
+</section>
