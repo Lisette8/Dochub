@@ -17,3 +17,12 @@
 .message-date { margin-left: auto; font-size: .8rem; color: var(--muted); }
 .message-body p { margin: 4px 0; }
 .reponse { margin-top: 20px; }
+
+/* Filtres de la page de gestion : barre compacte */
+.filtres { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.filtres .field { margin: 0; flex: 1 1 140px; min-width: 0; }
+.filtres .field:first-child { flex: 2 1 220px; }
+.filtres .field label { font-size: .75rem; color: var(--muted); margin-bottom: 4px; }
+.filtres .field input[type=text], .filtres .field select { padding: 8px 10px; font-size: .9rem; }
+.filtres .form-actions { margin: 0; flex: 0 0 auto; }
+.filtres .btn { padding: 8px 14px; }
