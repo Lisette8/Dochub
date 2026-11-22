@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ rapport.titre }} — DocHub{% endblock %}
+{% block nav_stats %}active{% endblock %}
+
+{% block content %}
+{% include "statistiques/_styles.html" %}
+<div class="page-head">
+  <div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+      <h1>{{ rapport.titre }}</h1>
+      {% if rapport.statut == 'TRAITE' %}
+        <span class="badge" style="background:#DCFCE7; color:#166534; font-weight:600;">Traité</span>
+      {% elif rapport.statut == 'EN_COURS' %}
+        <span class="badge" style="background:#FEF3C7; color:#92400E; font-weight:600;">En cours</span>
+      {% else %}
+        <span class="badge" style="background:#EEF2FF; color:#4338CA; font-weight:600;">Nouveau</span>
+      {% endif %}
+      <span class="badge" style="background:#F1F5F9; color:#475569; font-weight:600;">{{ rapport.format }}</span>
+      {% if rapport.archive %}
+        <span class="badge" style="background:#E2E8F0; color:#475569;">Archivé</span>
+      {% endif %}
+    </div>
+    <p>Généré le {{ rapport.created_at|date:"d/m/Y à H:i" }}</p>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <a href="{% url 'statistiques:rapport_modifier' rapport.pk %}" class="btn">
+      Modifier le rapport
+    </a>
+    <a href="{% url 'statistiques:rapport_list' %}" class="btn secondary">
+      ← Retour aux rapports
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  {# Colonne gauche : Contenu et données du rapport #}
+  <div>
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:8px;">
+        <h2 style="margin:0;">Contenu officiel du rapport</h2>
+        <span class="badge" style="background:var(--indigo-soft); color:var(--indigo); font-weight:600; padding:4px 10px;">
+          📄 Document généré ({{ rapport.format }})
+        </span>
+      </div>
+      <p class="sub" style="margin-bottom:16px;">Synthèse des indicateurs d'activité calculée du {{ rapport.date_debut|date:"d/m/Y" }} au {{ rapport.date_fin|date:"d/m/Y" }}</p>
+
+      {% if rapport.description %}
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:0.92rem; color:var(--text-2);">
+        <strong style="color:var(--text);">Description fournie :</strong> {{ rapport.description }}
+      </div>
+      {% endif %}
+
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden;">
+        <div style="background:#F1F5F9; padding:8px 16px; border-bottom:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">
+          <span>Aperçu du contenu du rapport</span>
+          <span>{{ rapport.format }}</span>
+        </div>
+        <div style="padding:18px 20px;">
+          <pre style="margin:0; font-family:'Courier New', Courier, monospace, sans-serif; white-space:pre-wrap; color:#1E293B; font-size:0.92rem; line-height:1.7;">{{ rapport.contenu }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Colonne droite : Suivi en lecture seule & Actions administratives #}
+  <div>
+    {# Bloc Suivi & Note (lecture seule, modification centralisée sur la page Modifier) #}
+    <div class="card" style="margin-bottom:20px;">
+      <h2>Suivi & Statut</h2>
+      <p class="sub">État de traitement et note interne associée</p>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:0.82rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); margin-bottom:6px;">
+          Statut actuel
+        </label>
+        <div>
+          {% if rapport.statut == 'TRAITE' %}
+            <span class="badge" style="background:#DCFCE7; color:#166534; font-weight:600; font-size:0.9rem; padding:4px 14px;">Traité</span>
+          {% elif rapport.statut == 'EN_COURS' %}
+            <span class="badge" style="background:#FEF3C7; color:#92400E; font-weight:600; font-size:0.9rem; padding:4px 14px;">En cours de traitement</span>
+          {% else %}
+            <span class="badge" style="background:#EEF2FF; color:#4338CA; font-weight:600; font-size:0.9rem; padding:4px 14px;">Nouveau</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="margin-bottom:0;">
+        <label style="display:block; font-size:0.82rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); margin-bottom:6px;">
+          Note interne
+        </label>
+        {% if rapport.note %}
+          <div style="background:#F8FAFC; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:0.92rem; color:var(--text-2); line-height:1.6; white-space:pre-wrap;">{{ rapport.note }}</div>
+        {% else %}
+          <div style="color:var(--muted); font-size:0.88rem; font-style:italic;">Aucune note interne pour le moment.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Actions d'administration & Archivage (US-52) #}
+    <div class="card">
+      <h2>Gestion du rapport</h2>
+      <p class="sub">Actions secondaires d'administration</p>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <form method="post" action="{% url 'statistiques:rapport_archiver' rapport.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn secondary block">
+            {% if rapport.archive %}
+              Restaurer le rapport (Désarchiver)
+            {% else %}
+              Archiver ce rapport
+            {% endif %}
+          </button>
+        </form>
+
+        <a href="{% url 'statistiques:rapport_supprimer' rapport.pk %}" class="btn secondary block" style="color:var(--danger); border-color:var(--danger-soft);">
+          Supprimer définitivement
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

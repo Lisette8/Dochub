@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Supprimer — DocHub{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Supprimer {{ comptes|length }} compte{{ comptes|length|pluralize }} ?</h1>
+    <p><a href="{% url 'users:user_list' %}">← Utilisateurs et rôles</a></p>
+  </div>
+</div>
+<div class="card form-grid">
+  <ul class="plain">
+    {% for compte in comptes %}<li><strong>{{ compte.get_full_name }}</strong> <span class="cell-hint">{{ compte.email }}</span> {% include "users/_badges.html" with badge="role" %}</li>{% endfor %}
+  </ul>
+  {% if protected %}
+    <div class="alert" role="alert">Suppression impossible : des éléments liés à ces comptes sont protégés. Fermez plutôt le compte.</div>
+    <ul>{% for obj in protected %}<li>{{ obj }}</li>{% endfor %}</ul>
+    <a class="btn secondary" href="{% url 'users:user_list' %}">Retour à la liste</a>
+  {% else %}
+    {% if related %}
+    <div class="alert warning">Seront aussi supprimés : {% for name, n in related %}{{ n }} {{ name }}{% if not forloop.last %}, {% endif %}{% endfor %}.</div>
+    {% endif %}
+    <p class="sub">Cette suppression est définitive. Pour empêcher seulement la connexion, vous pouvez fermer ou bloquer le compte.</p>
+    <form method="post" action="{% url 'users:users_delete' %}" class="form-actions">
+      {% csrf_token %}
+      <input type="hidden" name="confirmer" value="oui">
+      {% for compte in comptes %}<input type="hidden" name="comptes" value="{{ compte.pk }}">{% endfor %}
+      <a class="btn secondary" href="{% url 'users:user_list' %}">Annuler</a>
+      <button class="btn danger" type="submit">Oui, supprimer</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}
