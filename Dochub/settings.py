@@ -49,12 +49,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'support',
+
+
     'statistiques',
 
 
 
      # Apps DocHub
     'evenements',
+
 
     # Librairies
     'rest_framework',
