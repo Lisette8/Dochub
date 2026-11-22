@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Nouveau ticket — DocHub{% endblock %}
+{% block title %}{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Nouveau ticket{% endif %} — DocHub{% endblock %}
 {% block nav_support %}active{% endblock %}
 {% block content %}
 <style>
@@ -9,8 +9,8 @@
 
 <div class="page-head">
   <div>
-    <h1>Nouveau ticket</h1>
-    <p>Décrivez votre demande, l'équipe de support vous répondra.</p>
+    <h1>{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Nouveau ticket{% endif %}</h1>
+    <p>{% if object %}Vous pouvez modifier votre ticket tant qu'il n'est pas pris en charge.{% else %}Décrivez votre demande, l'équipe de support vous répondra.{% endif %}</p>
   </div>
 </div>
 
@@ -24,8 +24,8 @@
     </div>
     {% include "partials/field.html" with field=form.description %}
     <div class="form-actions">
-      <button type="submit" class="btn">Envoyer le ticket</button>
-      <a class="btn secondary" href="{% url 'support:liste' %}">Annuler</a>
+          <button type="submit" class="btn">{% if object %}Enregistrer{% else %}Envoyer le ticket{% endif %}</button>
+          <a class="btn secondary" href="{% if object %}{% url 'support:detail' object.pk %}{% else %}{% url 'support:liste' %}{% endif %}">Annuler</a>
     </div>
   </form>
 </div>

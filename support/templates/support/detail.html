@@ -7,7 +7,12 @@
     <h1>#{{ ticket.pk }} — {{ ticket.titre }}</h1>
     <p>Créé le {{ ticket.created_at|date:"d/m/Y à H:i" }}</p>
   </div>
-  <a class="btn secondary" href="{% url 'support:liste' %}">Retour à la liste</a>
+  <div style="display:flex; gap:8px">
+      {% if ticket.statut == 'OUVERT' %}
+      <a class="btn" href="{% url 'support:modifier' ticket.pk %}">Modifier</a>
+      {% endif %}
+      <a class="btn secondary" href="{% url 'support:liste' %}">Retour à la liste</a>
+    </div>
 </div>
 
 <div class="grid grid-2">
