@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Nouveau ticket — DocHub{% endblock %}
+{% block nav_support %}active{% endblock %}
+{% block content %}
+<style>
+  .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: vertical; }
+  .field textarea:focus { outline: none; border-color: var(--indigo); }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>Nouveau ticket</h1>
+    <p>Décrivez votre demande, l'équipe de support vous répondra.</p>
+  </div>
+</div>
+
+<div class="card">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/field.html" with field=form.titre %}
+    <div class="field-row">
+      {% include "partials/field.html" with field=form.categorie %}
+      {% include "partials/field.html" with field=form.priorite %}
+    </div>
+    {% include "partials/field.html" with field=form.description %}
+    <div class="form-actions">
+      <button type="submit" class="btn">Envoyer le ticket</button>
+      <a class="btn secondary" href="{% url 'support:liste' %}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

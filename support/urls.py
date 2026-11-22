@@ -5,5 +5,7 @@ from . import views
 app_name = "support"
 
 urlpatterns = [
-    path("", views.liste, name="liste"),
+    path("", views.TicketListView.as_view(), name="liste"),
+    path("nouveau/", views.TicketCreateView.as_view(), name="creer"),
+    path("<int:pk>/", views.TicketDetailView.as_view(), name="detail"),
 ]

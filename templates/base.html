@@ -21,7 +21,7 @@
       <a class="disabled" title="Module Documents — à venir">{% include "partials/icon.html" with name="file" %} Documents</a>
       <a class="disabled" title="Module Actualités — à venir">{% include "partials/icon.html" with name="news" %} Actualités</a>
       <a class="disabled" title="Module Événements — à venir">{% include "partials/icon.html" with name="calendar" %} Événements</a>
-      <a class="disabled" title="Module Support — à venir">{% include "partials/icon.html" with name="support" %} Support</a>
+      <a href="{% url 'support:liste' %}" class="{% block nav_support %}{% endblock %}">{% include "partials/icon.html" with name="support" %} Support</a>
       <a class="disabled" title="Assistant IA — à venir">{% include "partials/icon.html" with name="sparkle" %} Assistant IA</a>
 
       {% if user.is_admin %}

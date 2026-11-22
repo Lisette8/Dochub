@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Ticket #{{ ticket.pk }} — DocHub{% endblock %}
+{% block nav_support %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>#{{ ticket.pk }} — {{ ticket.titre }}</h1>
+    <p>Créé le {{ ticket.created_at|date:"d/m/Y à H:i" }}</p>
+  </div>
+  <a class="btn secondary" href="{% url 'support:liste' %}">Retour à la liste</a>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Description</h2>
+    <div>{{ ticket.description|linebreaks }}</div>
+  </div>
+
+  <div class="card">
+    <h2>Informations</h2>
+    <dl class="info-list">
+      <div><dt>Statut</dt><dd><span class="badge {% if ticket.statut == 'RESOLU' or ticket.statut == 'FERME' %}ok{% endif %}">{{ ticket.get_statut_display }}</span></dd></div>
+      <div><dt>Catégorie</dt><dd>{{ ticket.get_categorie_display }}</dd></div>
+      <div><dt>Priorité</dt><dd>{{ ticket.get_priorite_display }}</dd></div>
+      <div><dt>Pris en charge par</dt><dd>{{ ticket.assigne_a.get_full_name|default:"Pas encore assigné" }}</dd></div>
+      <div><dt>Dernière modification</dt><dd>{{ ticket.updated_at|date:"d/m/Y à H:i" }}</dd></div>
+    </dl>
+  </div>
+</div>
+{% endblock %}
