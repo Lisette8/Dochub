@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .forms import CREATION_STATUTS, clean_new_email, clean_person_name
+from .forms import CREATION_STATUTS, EMAIL_MAX, NAME_MAX, clean_new_email, clean_person_name
 
 User = get_user_model()
 
@@ -17,9 +17,9 @@ class UserSerializer(serializers.ModelSerializer):
 class AdminCreateUserSerializer(serializers.Serializer):
     """US-05 via l'API : mêmes contrôles de saisie que le formulaire de la page."""
 
-    first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
-    email = serializers.EmailField(max_length=254)
+    first_name = serializers.CharField(max_length=NAME_MAX)
+    last_name = serializers.CharField(max_length=NAME_MAX)
+    email = serializers.EmailField(max_length=EMAIL_MAX)
     role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.UTILISATEUR)
     statut = serializers.ChoiceField(choices=CREATION_STATUTS, default=User.Statut.OUVERT)
 
