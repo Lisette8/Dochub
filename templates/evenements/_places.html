@@ -1,0 +1,10 @@
+{# Jauge des participants d'un événement. Variable attendue : evt #}
+<div class="ev-places">
+  <div class="ev-places-top">
+    <span>{{ evt.nombre_participants }}{% if evt.capacite is not None %} / {{ evt.capacite }}{% endif %} participant{{ evt.nombre_participants|pluralize }}{% if evt.capacite is None %} · places illimitées{% endif %}</span>
+    {% if evt.capacite is not None %}<span class="pct">{{ evt.taux_remplissage }}%</span>{% endif %}
+  </div>
+  {% if evt.capacite is not None %}
+    <div class="ev-bar{% if evt.est_complet %} plein{% endif %}" role="progressbar" aria-valuenow="{{ evt.taux_remplissage }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ evt.taux_remplissage }}%"></span></div>
+  {% endif %}
+</div>
