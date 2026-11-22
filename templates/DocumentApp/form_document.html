@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Modifier {{ object.titreDocument }}{% else %}Ajouter un document{% endif %} — DocHub{% endblock %}
+{% block nav_documents %}active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if object %}Modifier le document{% else %}Ajouter un document{% endif %}</h1>
+    <p><a href="{% url 'DocumentApp:liste' %}">← Retour à la liste</a></p>
+  </div>
+</div>
+
+<form class="card" method="post">
+  {% csrf_token %}
+  {% for error in form.non_field_errors %}
+  <div class="alert" role="alert">{{ error }}</div>
+  {% endfor %}
+
+  {% include "partials/field.html" with field=form.titreDocument %}
+  {% include "partials/field.html" with field=form.descDocument %}
+
+  <div class="form-actions">
+    <a class="btn secondary" href="{% if object %}{% url 'DocumentApp:detail' object.pk %}{% else %}{% url 'DocumentApp:liste' %}{% endif %}">Annuler</a>
+    <button class="btn" type="submit">{% if object %}Enregistrer{% else %}Ajouter{% endif %}</button>
+  </div>
+</form>
+{% endblock %}

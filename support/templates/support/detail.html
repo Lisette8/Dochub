@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Ticket #{{ ticket.pk }} — DocHub{% endblock %}
+{% block nav_support %}active{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
+
+<div class="page-head">
+  <div>
+    <h1>#{{ ticket.pk }} — {{ ticket.titre }}</h1>
+    <p>Créé le {{ ticket.created_at|date:"d/m/Y à H:i" }}</p>
+  </div>
+  <div style="display:flex; gap:8px">
+      {% if ticket.statut == 'OUVERT' %}
+      <a class="btn" href="{% url 'support:modifier' ticket.pk %}">Modifier</a>
+      {% endif %}
+      <a class="btn secondary" href="{% url 'support:liste' %}">Retour à la liste</a>
+    </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Description</h2>
+    <div>{{ ticket.description|linebreaks }}</div>
+  </div>
+
+  <div class="card">
+    <h2>Informations</h2>
+    <dl class="info-list">
+      <div><dt>Statut</dt><dd><span class="badge {% if ticket.statut == 'RESOLU' or ticket.statut == 'FERME' %}ok{% endif %}">{{ ticket.get_statut_display }}</span></dd></div>
+      <div><dt>Catégorie</dt><dd>{{ ticket.get_categorie_display }}</dd></div>
+      <div><dt>Priorité</dt><dd>{{ ticket.get_priorite_display }}</dd></div>
+      <div><dt>Pris en charge par</dt><dd>{{ ticket.assigne_a.get_full_name|default:"Pas encore assigné" }}</dd></div>
+      <div><dt>Dernière modification</dt><dd>{{ ticket.updated_at|date:"d/m/Y à H:i" }}</dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card fil">
+  <h2>Discussion</h2>
+  {% for c in commentaires %}
+  <div class="message {% if c.auteur_id == ticket.auteur_id %}moi{% else %}support{% endif %}">
+    <div class="message-head">
+      <strong>{% if c.auteur_id == ticket.auteur_id %}Vous{% else %}{{ c.auteur.get_full_name }}{% endif %}</strong>
+      {% if c.auteur_id != ticket.auteur_id %}<span class="badge admin">Support</span>{% endif %}
+      <span class="message-date">{{ c.created_at|date:"d/m/Y à H:i" }}</span>
+    </div>
+    <div class="message-body">{{ c.contenu|linebreaks }}</div>
+  </div>
+  {% empty %}
+  <p class="empty">Aucune réponse pour le moment.</p>
+  {% endfor %}
+  {% if ticket.statut == 'FERME' %}
+  <p class="sub">Ce ticket est fermé, il n'accepte plus de réponses.</p>
+  {% else %}
+  <form method="post" action="{% url 'support:repondre' ticket.pk %}" class="reponse">
+    {% csrf_token %}
+    {% include "partials/field.html" with field=form_reponse.contenu %}
+    <div class="form-actions">
+      <button type="submit" class="btn">Envoyer la réponse</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+{% endblock %}

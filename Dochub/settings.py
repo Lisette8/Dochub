@@ -11,8 +11,11 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
+
 import environ
 import oracledb
+from django.core.management.utils import get_random_secret_key
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,12 +28,15 @@ environ.Env.read_env(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-p2drr6&+)(mcxn!fl%!*5zod7bhljwuj37+yo6^b82f+6ezl9e'
+# La clé vient du fichier .env ; sans clé, une clé aléatoire est générée à chaque démarrage
+# (les utilisateurs sont alors déconnectés au redémarrage). Aucune clé dans le code.
+SECRET_KEY = env("SECRET_KEY", default="") or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# Vide + DEBUG : Django accepte seulement localhost. Ailleurs : ALLOWED_HOSTS=site1,site2 dans .env
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 
 # Application definition
@@ -42,7 +48,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'DocumentApp'
+
+    'DocumentApp',
+    'support',
+    'statistiques',
+     # Apps DocHub
+    'evenements',
+    # Librairies
+    'rest_framework',
+    'rest_framework_simplejwt',
+    # Modules DocHub
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -51,6 +67,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'users.middleware.NoCacheForAuthenticatedMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -62,7 +79,7 @@ ROOT_URLCONF = 'Dochub.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -80,20 +97,29 @@ WSGI_APPLICATION = 'Dochub.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.oracle",
-        "NAME": oracledb.makedsn(
-            env("DB_HOST", default="localhost"),
-            env("DB_PORT", default="1521"),
-            service_name=env("DB_NAME", default="FREEPDB1"),
-        ),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": "",
-        "PORT": "",
+# DB_ENGINE=sqlite permet de lancer les tests / le dev sans le conteneur Oracle.
+if env("DB_ENGINE", default="oracle") == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.oracle",
+            "NAME": oracledb.makedsn(
+                env("DB_HOST"),
+                env("DB_PORT"),
+                service_name=env("DB_NAME"),
+            ),
+            "USER": env("DB_USER"),
+            "PASSWORD": env("DB_PASSWORD"),
+            "HOST": "",
+            "PORT": "",
+        }
+    }
 
 
 # Password validation
@@ -118,9 +144,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Tunis'
 
 USE_I18N = True
 
@@ -131,6 +157,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 
 # Email
@@ -141,3 +168,31 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# Authentification — module Utilisateurs
+AUTH_USER_MODEL = "users.User"
+AUTHENTICATION_BACKENDS = ["users.backends.StatutBackend"]
+LOGIN_URL = "users:login"
+LOGIN_REDIRECT_URL = "users:dashboard"
+LOGOUT_REDIRECT_URL = "users:login"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+# Gestion des comptes (modifiable dans .env)
+SUSPENSION_JOURS = env.int("SUSPENSION_JOURS", default=7)    # durée de l'action « Suspendre »
+COMPTES_PAR_PAGE = env.int("COMPTES_PAR_PAGE", default=10)   # pages DocHub et admin Django
+HISTORIQUE_TAILLE = env.int("HISTORIQUE_TAILLE", default=10)  # lignes d'historique sur la fiche d'un compte

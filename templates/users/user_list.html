@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs — DocHub{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Utilisateurs et rôles</h1>
+    <p>{{ total }} compte{{ total|pluralize }} · {{ roles|length }} rôles : {% for value, label in roles %}{% if not forloop.first %}{% if forloop.last %} et {% else %}, {% endif %}{% endif %}{{ label }}{% endfor %}</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn secondary" href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="shield" %} Admin Django</a>
+    <a class="btn" href="{% url 'users:user_create' %}">{% include "partials/icon.html" with name="plus" %} Ajouter un utilisateur</a>
+  </div>
+</div>
+
+<form class="filters" method="get" role="search">
+  <label class="search">{% include "partials/icon.html" with name="search" %}
+    <input type="search" name="q" value="{{ params.q }}" maxlength="{{ q_max }}" placeholder="Nom ou e-mail…" aria-label="Nom ou e-mail">
+  </label>
+  <label class="filter">Rôle
+    <select name="role" data-autosubmit>
+      <option value="">Tous</option>
+      {% for value, label in roles %}<option value="{{ value }}"{% if value == params.role %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="filter">Statut
+    <select name="statut" data-autosubmit>
+      <option value="">Tous</option>
+      {% for value, label in statuts %}<option value="{{ value }}"{% if value == params.statut %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <input type="hidden" name="tri" value="{{ params.tri }}">
+  <button class="btn secondary" type="submit">Rechercher</button>
+  {% if filtered %}<a class="reset" href="{% url 'users:user_list' %}">Effacer</a>{% endif %}
+</form>
+
+{# Suppression d'un seul compte : formulaire à part pour ne pas envoyer les autres cases cochées #}
+<form id="delete-one" method="post" action="{% url 'users:users_delete' %}">{% csrf_token %}</form>
+
+<form method="post" id="bulk">
+  {% csrf_token %}
+  <div class="card table-card">
+    <div class="bulk-bar">
+      <label class="filter">Action
+        <select name="action" required>
+          <option value="">Choisir une action…</option>
+          {% for value, label in actions %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          <option value="supprimer">Supprimer</option>
+        </select>
+      </label>
+      <button class="btn secondary" type="submit">Appliquer</button>
+      <span class="cell-hint" id="selected-count" aria-live="polite"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="check-all" aria-label="Tout cocher"></th>
+            {% for c in columns %}
+            <th aria-sort="{{ c.sort }}"><a href="{% querystring tri=c.tri page=None %}">{{ c.label }} {{ c.arrow }}</a></th>
+            {% endfor %}
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for compte in page %}
+          <tr>
+            <td class="col-check"><input type="checkbox" name="comptes" value="{{ compte.pk }}" aria-label="Cocher {{ compte.get_full_name }}"></td>
+            <td>
+              <a class="person" href="{% url 'users:user_update' compte.pk %}">
+                <span class="avatar">{{ compte.first_name|slice:":1"|upper }}{{ compte.last_name|slice:":1"|upper }}</span>
+                <span><strong>{{ compte.get_full_name }}</strong>{% if compte.pk == user.pk %} <span class="cell-hint">(vous)</span>{% endif %}<br><span class="cell-hint">{{ compte.email }}</span></span>
+              </a>
+            </td>
+            <td>{% include "users/_badges.html" with badge="role" %}</td>
+            <td>{% include "users/_badges.html" with badge="statut" %}</td>
+            <td class="nowrap">{% if compte.last_login %}{{ compte.last_login|date:"d/m/Y · H:i" }}{% else %}<span class="cell-hint">Jamais</span>{% endif %}</td>
+            <td class="nowrap">{{ compte.date_joined|date:"d/m/Y" }}</td>
+            <td class="nowrap">
+              <a class="icon-btn bordered" href="{% url 'users:user_update' compte.pk %}" title="Modifier" aria-label="Modifier {{ compte.get_full_name }}">{% include "partials/icon.html" with name="edit" %}</a>
+              {% if compte.pk != user.pk %}
+              <button class="icon-btn bordered danger" type="submit" form="delete-one" name="comptes" value="{{ compte.pk }}" title="Supprimer" aria-label="Supprimer {{ compte.get_full_name }}">{% include "partials/icon.html" with name="trash" %}</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="empty">Aucun compte ne correspond à cette recherche.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+    <div class="pager">
+      {% if page.has_previous %}<a class="btn secondary" href="{% querystring page=page.previous_page_number %}">Précédent</a>{% endif %}
+      <span>Page {{ page.number }} sur {{ page.paginator.num_pages }} · {{ page.paginator.count }} comptes</span>
+      {% if page.has_next %}<a class="btn secondary" href="{% querystring page=page.next_page_number %}">Suivant</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+<script>
+  // Confort seulement : tout fonctionne aussi sans JavaScript.
+  (function () {
+    document.querySelectorAll("[data-autosubmit]").forEach(function (s) {
+      s.addEventListener("change", function () { s.form.submit(); });
+    });
+    var all = document.getElementById("check-all");
+    var boxes = Array.from(document.querySelectorAll('#bulk input[name="comptes"]'));
+    var count = document.getElementById("selected-count");
+    function refresh() {
+      var n = boxes.filter(function (b) { return b.checked; }).length;
+      count.textContent = n ? n + (n > 1 ? " comptes cochés" : " compte coché") : "";
+      all.checked = n > 0 && n === boxes.length;
+      all.indeterminate = n > 0 && n < boxes.length;
+    }
+    all.addEventListener("change", function () {
+      boxes.forEach(function (b) { b.checked = all.checked; });
+      refresh();
+    });
+    boxes.forEach(function (b) { b.addEventListener("change", refresh); });
+    refresh();
+  })();
+</script>
+{% endblock %}
