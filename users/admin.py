@@ -5,20 +5,20 @@
 - Lire : liste avec recherche (nom, email), filtres (rôle, statut), tri.
 - Modifier : identité, rôle (promouvoir / rétrograder), statut, suspension, motif.
 - Supprimer : avec la page de confirmation de Django.
-- Actions groupées : promouvoir, rétrograder, suspendre 7 jours, bloquer, fermer,
+- Actions groupées : promouvoir, rétrograder, suspendre, bloquer, fermer,
   rouvrir, renvoyer l'e-mail d'activation.
 
 Accès : les comptes de rôle Administrateur (pas seulement les superutilisateurs).
 Garde-fou : un admin ne peut pas se supprimer, se rétrograder, ni suspendre /
 bloquer / fermer son propre compte.
 """
-from datetime import timedelta
-
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.utils import timezone
 
+from .account_actions import ACTION_LABELS, run_account_action
 from .admin_forms import UserAdminChangeForm, UserAdminCreationForm
 from .models import User
 from .permissions import user_is_admin
@@ -43,7 +43,7 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ["role", "statut"]
     search_fields = ["email", "first_name", "last_name"]
     ordering = ["-date_joined"]
-    list_per_page = 25
+    list_per_page = settings.COMPTES_PAR_PAGE
     readonly_fields = ["last_login", "date_joined"]
 
     fieldsets = [
@@ -61,7 +61,7 @@ class UserAdmin(BaseUserAdmin):
         ("Rôle et statut", {"classes": ["wide"], "fields": ["role", "statut"]}),
         ("Mot de passe (facultatif)", {"classes": ["wide"], "fields": ["password1", "password2"]}),
     ]
-    actions = ["promouvoir_admin", "retrograder_utilisateur", "suspendre_7_jours", "bloquer", "fermer",
+    actions = ["promouvoir_admin", "retrograder_utilisateur", "suspendre", "bloquer", "fermer",
                "rouvrir", "renvoyer_activation"]
 
     # ---------- Colonnes ----------
@@ -112,57 +112,32 @@ class UserAdmin(BaseUserAdmin):
             send_activation_email(request, obj)
             self.message_user(request, f"Un e-mail d'activation a été envoyé à {obj.email}.", messages.INFO)
 
-    # ---------- Actions groupées ----------
+    # ---------- Actions groupées (règles communes avec les pages DocHub : account_actions.py) ----------
 
-    def _others(self, request, queryset, what):
-        """Retire l'admin connecté de la sélection (il ne peut pas se l'appliquer)."""
-        if queryset.filter(pk=request.user.pk).exists():
-            self.message_user(request, f"Votre propre compte a été ignoré : vous ne pouvez pas vous {what}.",
-                              messages.WARNING)
-        return queryset.exclude(pk=request.user.pk)
-
-    def _apply(self, request, queryset, done, **changes):
-        # save() sur chaque compte (et non queryset.update) pour garder is_staff / is_active cohérents.
-        count = 0
-        for user in queryset:
-            for field, value in changes.items():
-                setattr(user, field, value)
-            user.save()
-            count += 1
-        self.message_user(request, f"{count} compte(s) {done}.", messages.SUCCESS)
-
-    @admin.action(description="Promouvoir en Administrateur")
+    @admin.action(description=ACTION_LABELS["promouvoir_admin"])
     def promouvoir_admin(self, request, queryset):
-        self._apply(request, queryset, "promu(s) Administrateur", role=User.Role.ADMIN)
+        run_account_action(request, "promouvoir_admin", queryset)
 
-    @admin.action(description="Rétrograder en Utilisateur")
+    @admin.action(description=ACTION_LABELS["retrograder_utilisateur"])
     def retrograder_utilisateur(self, request, queryset):
-        self._apply(request, self._others(request, queryset, "rétrograder"), "rétrogradé(s) Utilisateur",
-                    role=User.Role.UTILISATEUR)
+        run_account_action(request, "retrograder_utilisateur", queryset)
 
-    @admin.action(description="Suspendre 7 jours")
-    def suspendre_7_jours(self, request, queryset):
-        self._apply(request, self._others(request, queryset, "suspendre"), "suspendu(s) pour 7 jours",
-                    statut=User.Statut.SUSPENDU, suspendu_jusqua=timezone.now() + timedelta(days=7))
+    @admin.action(description=ACTION_LABELS["suspendre"])
+    def suspendre(self, request, queryset):
+        run_account_action(request, "suspendre", queryset)
 
-    @admin.action(description="Bloquer")
+    @admin.action(description=ACTION_LABELS["bloquer"])
     def bloquer(self, request, queryset):
-        self._apply(request, self._others(request, queryset, "bloquer"), "bloqué(s)", statut=User.Statut.BLOQUE)
+        run_account_action(request, "bloquer", queryset)
 
-    @admin.action(description="Fermer (désactiver)")
+    @admin.action(description=ACTION_LABELS["fermer"])
     def fermer(self, request, queryset):
-        self._apply(request, self._others(request, queryset, "fermer"), "fermé(s)", statut=User.Statut.FERME)
+        run_account_action(request, "fermer", queryset)
 
-    @admin.action(description="Rouvrir")
+    @admin.action(description=ACTION_LABELS["rouvrir"])
     def rouvrir(self, request, queryset):
-        self._apply(request, queryset, "rouvert(s)", statut=User.Statut.OUVERT)
+        run_account_action(request, "rouvrir", queryset)
 
-    @admin.action(description="Renvoyer l'e-mail d'activation")
+    @admin.action(description=ACTION_LABELS["renvoyer_activation"])
     def renvoyer_activation(self, request, queryset):
-        pending = [u for u in queryset if u.est_en_attente_activation]
-        for user in pending:
-            send_activation_email(request, user)
-        skipped = queryset.count() - len(pending)
-        self.message_user(request, f"E-mail d'activation renvoyé à {len(pending)} compte(s).", messages.SUCCESS)
-        if skipped:
-            self.message_user(request, f"{skipped} compte(s) ignoré(s) : mot de passe déjà choisi.", messages.INFO)
+        run_account_action(request, "renvoyer_activation", queryset)

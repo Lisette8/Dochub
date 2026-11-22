@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{% if compte %}Modifier {{ compte.get_full_name }}{% else %}Ajouter un utilisateur{% endif %} — DocHub{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if compte %}{{ compte.get_full_name }}{% else %}Ajouter un utilisateur{% endif %}</h1>
+    <p><a href="{% url 'users:user_list' %}">← Utilisateurs et rôles</a></p>
+  </div>
+</div>
+
+<div class="grid {% if compte %}grid-2{% endif %} form-grid">
+  <form class="card" id="account-form" method="post" novalidate{% if compte %} data-ouvert="{{ compte.Statut.OUVERT.value }}" data-suspendu="{{ compte.Statut.SUSPENDU.value }}"{% endif %}>
+    {% csrf_token %}
+    <h2>{% if compte %}Modifier le compte{% else %}Nouveau compte{% endif %}</h2>
+    <p class="sub">{% if compte %}Identité, rôle et statut{% else %}Sans mot de passe, un e-mail d'activation sera envoyé{% endif %}</p>
+    {% for e in form.non_field_errors %}<div class="alert" role="alert">{{ e }}</div>{% endfor %}
+    <div class="field-row">
+      {% include "partials/field.html" with field=form.first_name %}
+      {% include "partials/field.html" with field=form.last_name %}
+    </div>
+    {% include "partials/field.html" with field=form.email %}
+    <div class="field-row">
+      {% include "partials/field.html" with field=form.role %}
+      {% include "partials/field.html" with field=form.statut %}
+    </div>
+    {% if compte %}
+      <div id="suspension">{% include "partials/field.html" with field=form.suspendu_jusqua show_help=True %}</div>
+      <div id="motif">{% include "partials/field.html" with field=form.motif_statut show_help=True %}</div>
+    {% else %}
+      <div class="field-row">
+        {% include "partials/field.html" with field=form.password1 show_help=True %}
+        {% include "partials/field.html" with field=form.password2 %}
+      </div>
+    {% endif %}
+    <div class="form-actions">
+      <a class="btn secondary" href="{% url 'users:user_list' %}">Annuler</a>
+      <button class="btn" type="submit">{% if compte %}Enregistrer{% else %}Créer le compte{% endif %}</button>
+    </div>
+  </form>
+
+  {% if compte %}
+  <div class="stack">
+    <div class="card">
+      <h2>Compte</h2>
+      <dl class="info-list">
+        <div><dt>Rôle</dt><dd>{% include "users/_badges.html" with badge="role" %}</dd></div>
+        <div><dt>Statut</dt><dd class="right">{% include "users/_badges.html" with badge="statut" %}</dd></div>
+        <div><dt>Dernière connexion</dt><dd>{{ compte.last_login|date:"d/m/Y · H:i"|default:"Jamais" }}</dd></div>
+        <div><dt>Créé le</dt><dd>{{ compte.date_joined|date:"d/m/Y" }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2>Actions rapides</h2>
+      <form method="post" class="stack small">
+        {% csrf_token %}
+        {% for key, label in actions %}<button class="btn secondary block" name="action" value="{{ key }}">{{ label }}</button>{% endfor %}
+        <a class="btn secondary block" href="{% url 'users:user_password' compte.pk %}">Changer le mot de passe</a>
+      </form>
+      {% if is_self %}
+        <p class="cell-hint">C'est votre propre compte : vous ne pouvez pas le rétrograder, le suspendre, le bloquer, le fermer ni le supprimer.</p>
+      {% else %}
+        <form method="post" action="{% url 'users:users_delete' %}" class="danger-zone">
+          {% csrf_token %}
+          <button class="btn danger block" name="comptes" value="{{ compte.pk }}">{% include "partials/icon.html" with name="trash" %} Supprimer le compte</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Historique</h2>
+      <p class="sub">Dernières modifications (pages DocHub et admin Django)</p>
+      {% for h in historique %}
+        <div class="log"><span>{{ h.get_change_message|default:h.get_action_flag_display }}<br><span class="cell-hint">par {{ h.user.get_full_name }}</span></span><span class="cell-hint nowrap">{{ h.action_time|date:"d/m · H:i" }}</span></div>
+      {% empty %}<p class="cell-hint">Aucune modification enregistrée.</p>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if compte %}
+<script>
+  // Affiche la date de fin seulement pour « Suspendu », et le motif si le compte n'est pas « Ouvert ».
+  (function () {
+    var statut = document.getElementById("id_statut");
+    var valeurs = document.getElementById("account-form").dataset;
+    function refresh() {
+      document.getElementById("suspension").hidden = statut.value !== valeurs.suspendu;
+      document.getElementById("motif").hidden = statut.value === valeurs.ouvert;
+    }
+    statut.addEventListener("change", refresh);
+    refresh();
+  })();
+</script>
+{% endif %}
+{% endblock %}

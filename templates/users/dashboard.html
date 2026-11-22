@@ -31,16 +31,16 @@
     <dl class="info-list">
       <div><dt>Nom</dt><dd>{{ user.get_full_name }}</dd></div>
       <div><dt>E-mail</dt><dd>{{ user.email }}</dd></div>
-      <div><dt>Rôle</dt><dd><span class="badge {% if user.is_admin %}admin{% endif %}">{{ user.get_role_display }}</span></dd></div>
-      <div><dt>Statut</dt><dd><span class="badge ok">Actif</span></dd></div>
+      <div><dt>Rôle</dt><dd>{% include "users/_badges.html" with compte=user badge="role" %}</dd></div>
+      <div><dt>Statut</dt><dd>{% include "users/_badges.html" with compte=user badge="statut" %}</dd></div>
       <div><dt>Membre depuis</dt><dd>{{ user.date_joined|date:"d/m/Y" }}</dd></div>
     </dl>
   </div>
   {% if user.is_admin %}
   <div class="card">
     <h2>Administration</h2>
-    <p class="sub">Créer, modifier, suspendre ou supprimer des comptes (admin Django)</p>
-    <a class="btn block" href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+    <p class="sub">Créer, modifier, suspendre ou supprimer des comptes</p>
+    <a class="btn block" href="{% url 'users:user_list' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
   </div>
   {% endif %}
 </div>
