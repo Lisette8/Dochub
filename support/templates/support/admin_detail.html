@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Ticket #{{ ticket.pk }} — DocHub{% endblock %}
+{% block nav_support_admin %}active{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
+
+<div class="page-head">
+  <div>
+    <h1>#{{ ticket.pk }} — {{ ticket.titre }}</h1>
+    <p>Par {{ ticket.auteur.get_full_name }} · créé le {{ ticket.created_at|date:"d/m/Y à H:i" }}</p>
+  </div>
+  <div style="display:flex; gap:8px">
+    <a class="btn secondary" href="{% url 'admin:support_ticket_change' ticket.pk %}">Voir dans l'admin Django</a>
+    <a class="btn secondary" href="{% url 'support:gestion' %}">Retour à la liste</a>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Description</h2>
+    <div>{{ ticket.description|linebreaks }}</div>
+  </div>
+
+  <div class="card">
+    <h2>Informations</h2>
+    <dl class="info-list">
+      <div><dt>Statut</dt><dd><span class="badge {% if ticket.statut == 'RESOLU' or ticket.statut == 'FERME' %}ok{% endif %}">{{ ticket.get_statut_display }}</span></dd></div>
+      <div><dt>Catégorie</dt><dd>{{ ticket.get_categorie_display }}</dd></div>
+      <div><dt>Priorité</dt><dd>{{ ticket.get_priorite_display }}</dd></div>
+      <div><dt>Auteur</dt><dd>{{ ticket.auteur.email }}</dd></div>
+      <div><dt>Assigné à</dt><dd>{{ ticket.assigne_a.get_full_name|default:"Non assigné" }}</dd></div>
+      <div><dt>Dernière modification</dt><dd>{{ ticket.updated_at|date:"d/m/Y à H:i" }}</dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card fil">
+  <h2>Discussion</h2>
+  {% for c in commentaires %}
+  <div class="message {% if c.auteur_id == ticket.auteur_id %}moi{% else %}support{% endif %}">
+    <div class="message-head">
+      <strong>{{ c.auteur.get_full_name }}</strong>
+      <span class="badge {% if c.auteur_id != ticket.auteur_id %}admin{% endif %}">{% if c.auteur_id == ticket.auteur_id %}Client{% else %}Support{% endif %}</span>
+      <span class="message-date">{{ c.created_at|date:"d/m/Y à H:i" }}</span>
+    </div>
+    <div class="message-body">{{ c.contenu|linebreaks }}</div>
+  </div>
+  {% empty %}
+  <p class="empty">Aucun message pour le moment.</p>
+  {% endfor %}
+
+  {% if ticket.statut == 'FERME' %}
+  <p class="sub">Ce ticket est fermé. Rouvrez-le pour pouvoir répondre.</p>
+  {% else %}
+  <form method="post" action="{% url 'support:gestion_repondre' ticket.pk %}" class="reponse">
+    {% csrf_token %}
+    {% include "partials/field.html" with field=form_reponse.contenu %}
+    <div class="form-actions">
+      <button type="submit" class="btn">Envoyer la réponse</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

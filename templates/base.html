@@ -29,6 +29,7 @@
         {# La gestion des comptes se fait dans l'admin Django (CRUD, statuts, rôles). #}
         <a href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
         <a class="disabled" title="Module Statistiques — à venir">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
+        <a href="{% url 'support:gestion' %}" class="{% block nav_support_admin %}{% endblock %}">{% include "partials/icon.html" with name="support" %} Tickets</a>
       {% endif %}
     </nav>
 

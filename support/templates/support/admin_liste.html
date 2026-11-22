@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Gestion des tickets — DocHub{% endblock %}
+{% block nav_support_admin %}active{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
+
+<div class="page-head">
+  <div>
+    <h1>Gestion des tickets</h1>
+    <p>{{ tickets|length }} ticket{{ tickets|length|pluralize }}</p>
+  </div>
+  <a class="btn secondary" href="{% url 'admin:support_ticket_changelist' %}">Ouvrir l'admin Django</a>
+</div>
+
+<div class="card" style="margin-bottom:16px; padding:14px 16px">
+  <form method="get" class="filtres">
+    {% include "partials/field.html" with field=filtre.q %}
+    {% include "partials/field.html" with field=filtre.statut %}
+    {% include "partials/field.html" with field=filtre.priorite %}
+    {% include "partials/field.html" with field=filtre.categorie %}
+    {% include "partials/field.html" with field=filtre.assigne %}
+    <div class="form-actions">
+      <button type="submit" class="btn">Filtrer</button>
+      <a class="btn secondary" href="{% url 'support:gestion' %}">Réinitialiser</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  {% if tickets %}
+  <table class="tickets">
+    <thead>
+      <tr>
+        <th>N°</th>
+        <th>Titre</th>
+        <th>Auteur</th>
+        <th>Catégorie</th>
+        <th>Priorité</th>
+        <th>Statut</th>
+        <th>Assigné à</th>
+        <th>Créé le</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td>#{{ t.pk }}</td>
+        <td><a href="{% url 'support:gestion_detail' t.pk %}">{{ t.titre }}</a></td>
+        <td>{{ t.auteur.get_full_name }}</td>
+        <td>{{ t.get_categorie_display }}</td>
+        <td>{{ t.get_priorite_display }}</td>
+        <td><span class="badge {% if t.statut == 'RESOLU' or t.statut == 'FERME' %}ok{% endif %}">{{ t.get_statut_display }}</span></td>
+        <td>{{ t.assigne_a.get_full_name|default:"—" }}</td>
+        <td>{{ t.created_at|date:"d/m/Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">Aucun ticket ne correspond à ces critères.</p>
+  {% endif %}
+</div>
+{% endblock %}
