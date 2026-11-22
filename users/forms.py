@@ -6,15 +6,20 @@ from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm
 
 from .models import User
 
+# Longueurs maximales : définies une seule fois, dans le modèle
+NAME_MAX = User._meta.get_field("first_name").max_length
+EMAIL_MAX = User._meta.get_field("email").max_length
+EMAIL_PLACEHOLDER = "prenom.nom@organisation.tn"  # exemple affiché dans le champ vide (maquette)
+
 
 class LoginForm(AuthenticationForm):
     """Formulaire de connexion par email + mot de passe."""
 
     username = forms.EmailField(
         label="Adresse e-mail",
-        max_length=254,
+        max_length=EMAIL_MAX,
         widget=forms.EmailInput(attrs={
-            "autofocus": True, "autocomplete": "email", "placeholder": "prenom.nom@organisation.tn",
+            "autofocus": True, "autocomplete": "email", "placeholder": EMAIL_PLACEHOLDER,
         }),
         error_messages={
             "required": "L'adresse email est obligatoire.",
@@ -42,7 +47,7 @@ class LoginForm(AuthenticationForm):
 
 # ---------- Validation commune ----------
 
-NAME_ERRORS = {"required": "Ce champ est obligatoire.", "max_length": "150 caractères maximum."}
+NAME_ERRORS = {"required": "Ce champ est obligatoire.", "max_length": f"{NAME_MAX} caractères maximum."}
 EMAIL_ERRORS = {
     "required": "L'adresse email est obligatoire.",
     "invalid": "Saisissez une adresse email valide.",
@@ -81,17 +86,16 @@ class _AccountFieldsMixin:
 # ---------- Inscription (l'utilisateur crée son propre compte) ----------
 
 class RegisterForm(_AccountFieldsMixin, forms.Form):
-    first_name = forms.CharField(label="Prénom", max_length=150, error_messages=NAME_ERRORS,
+    first_name = forms.CharField(label="Prénom", max_length=NAME_MAX, error_messages=NAME_ERRORS,
                                  widget=forms.TextInput(attrs={"placeholder": "Prénom", "autocomplete": "given-name"}))
-    last_name = forms.CharField(label="Nom", max_length=150, error_messages=NAME_ERRORS,
+    last_name = forms.CharField(label="Nom", max_length=NAME_MAX, error_messages=NAME_ERRORS,
                                 widget=forms.TextInput(attrs={"placeholder": "Nom", "autocomplete": "family-name"}))
-    email = forms.EmailField(label="Adresse e-mail", max_length=254, error_messages=EMAIL_ERRORS,
-                             widget=forms.EmailInput(attrs={"placeholder": "prenom.nom@organisation.tn",
+    email = forms.EmailField(label="Adresse e-mail", max_length=EMAIL_MAX, error_messages=EMAIL_ERRORS,
+                             widget=forms.EmailInput(attrs={"placeholder": EMAIL_PLACEHOLDER,
                                                             "autocomplete": "email"}))
     password1 = forms.CharField(label="Mot de passe", strip=False,
                                 error_messages={"required": "Le mot de passe est obligatoire."},
-                                widget=forms.PasswordInput(attrs={"autocomplete": "new-password",
-                                                                  "placeholder": "8 caractères minimum"}))
+                                widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
     password2 = forms.CharField(label="Confirmer le mot de passe", strip=False,
                                 error_messages={"required": "Confirmez le mot de passe."},
                                 widget=forms.PasswordInput(attrs={"autocomplete": "new-password",

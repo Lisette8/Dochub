@@ -1,0 +1,6 @@
+{# Variables attendues : compte, et badge = "role" ou "statut" #}
+{% if badge == "role" %}<span class="badge {% if compte.is_admin %}admin{% endif %}">{{ compte.get_role_display }}</span>
+{% else %}<span class="badge {% if compte.statut == compte.Statut.OUVERT %}ok{% elif compte.statut == compte.Statut.SUSPENDU %}warn{% elif compte.statut == compte.Statut.BLOQUE %}danger{% endif %}">{{ compte.get_statut_display }}</span>
+{% if compte.statut == compte.Statut.SUSPENDU and compte.suspendu_jusqua %}<div class="cell-hint">jusqu'au {{ compte.suspendu_jusqua|date:"d/m/Y H:i" }}</div>{% endif %}
+{% if compte.est_en_attente_activation %}<div class="cell-hint">Activation en attente</div>{% endif %}
+{% endif %}

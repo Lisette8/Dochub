@@ -10,7 +10,7 @@ class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def get_by_natural_key(self, username):
-        # Connexion insensible à la casse : « Admin@DocHub.test » = « admin@dochub.test »
+        # Connexion insensible à la casse : majuscules et minuscules sont équivalentes
         # (admin Django, JWT et API passent tous par ici).
         return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": username.strip()})
 

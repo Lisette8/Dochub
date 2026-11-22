@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ rapport.titre }} — DocHub{% endblock %}
+{% block nav_stats %}active{% endblock %}
+
+{% block content %}
+{% include "statistiques/_styles.html" %}
+<div class="page-head">
+  <div>
+    <h1>Modifier le rapport</h1>
+    <p>Mettre à jour les informations, la période ou les notes du rapport</p>
+  </div>
+  <a href="{% url 'statistiques:rapport_detail' rapport.pk %}" class="btn secondary">
+    ← Revenir au rapport
+  </a>
+</div>
+
+<div class="card" style="max-width:720px; margin:0 auto; padding:28px 32px;">
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert" role="alert">
+        {% for e in form.non_field_errors %}{{ e }}<br>{% endfor %}
+      </div>
+    {% endif %}
+
+    {% include "partials/field.html" with field=form.titre %}
+
+    <div class="field-row">
+      {% include "partials/field.html" with field=form.date_debut %}
+      {% include "partials/field.html" with field=form.date_fin %}
+    </div>
+
+    {% include "partials/field.html" with field=form.format %}
+
+    {% include "partials/field.html" with field=form.description %}
+
+    <div class="field-row">
+      {% include "partials/field.html" with field=form.statut %}
+      <div></div>
+    </div>
+
+    {% include "partials/field.html" with field=form.note %}
+
+    <div style="background:var(--indigo-soft); border:1px solid var(--brume); border-radius:10px; padding:14px 18px; margin:20px 0; font-size:0.9rem; color:var(--indigo); display:flex; gap:12px; align-items:flex-start;">
+      <span style="font-size:1.2rem; line-height:1;">ℹ️</span>
+      <div>
+        <strong>Recalcul automatique :</strong> Si vous modifiez les dates de début ou de fin, la synthèse chiffrée sera automatiquement recalculée lors de l'enregistrement.
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
+      <a href="{% url 'statistiques:rapport_detail' rapport.pk %}" class="btn secondary">Annuler</a>
+      <button type="submit" class="btn">
+        Enregistrer les modifications
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

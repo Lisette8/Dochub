@@ -88,4 +88,37 @@ docker compose down
 ## Documentation du projet
 
 https://trello.com/invite/b/6ac541effe3cc229de368ad4/ATTI38fcd34140db4ac2f1df675412193c6b20E240CD/softwarebig6
+
+## Module Statistiques — Sprint 1 (Meriem Dhrif)
+
+Le module Statistiques fournit un tableau de bord d'activité globale et la gestion complète (CRUD) des rapports d'activité.
+
+### Fonctionnalités réalisées (Sprint 1)
+- **US-15** : Compteurs globaux (utilisateurs, documents, actualités, événements, tickets de support ouverts).
+- **US-32** : Génération d'un rapport sur une période sélectionnée avec calcul et synthèse automatique du contenu.
+- **US-33** : Consultation de la liste des rapports avec pagination et filtres multicritères (statut, dates, archivage).
+- **US-51** : Page de détail d'un rapport, mise à jour du statut (`Nouveau`, `En cours de traitement`, `Traité`) et saisie de notes internes.
+- **US-52** : Archivage / restauration rapide et suppression définitive avec page de confirmation.
+
+### Routes et URLs
+| Fonctionnalité | Méthode | URL | Nom de route |
+|---|---|---|---|
+| Compteurs globaux | GET | `/statistiques/` | `statistiques:compteurs` |
+| Liste des rapports | GET | `/statistiques/rapports/` | `statistiques:rapport_list` |
+| Générer un rapport | GET / POST | `/statistiques/rapports/generer/` | `statistiques:rapport_generer` |
+| Détail d'un rapport | GET | `/statistiques/rapports/<id>/` | `statistiques:rapport_detail` |
+| Modifier tout le rapport | GET / POST | `/statistiques/rapports/<id>/modifier/` | `statistiques:rapport_modifier` |
+| Modifier statut / note | POST | `/statistiques/rapports/<id>/statut/` | `statistiques:rapport_statut` |
+| Archiver / Désarchiver | POST | `/statistiques/rapports/<id>/archiver/` | `statistiques:rapport_archiver` |
+| Supprimer un rapport | GET / POST | `/statistiques/rapports/<id>/supprimer/` | `statistiques:rapport_supprimer` |
+
+### Exécution des tests
+```bash
+# Avec Docker :
+docker compose exec web python manage.py test statistiques
+
+# En local (avec SQLite) :
+DB_ENGINE=sqlite python manage.py test statistiques
+```
+
  

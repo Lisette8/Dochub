@@ -2,7 +2,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from . import views
+from . import account_views, views
 
 app_name = "users"
 
@@ -13,7 +13,13 @@ urlpatterns = [
     path("deconnexion/", views.LogoutView.as_view(), name="logout"),
     path("inscription/", views.register, name="register"),
     path("activer/<uidb64>/<token>/", views.ActivateView.as_view(), name="activate"),
-    # Ancienne page « Utilisateurs » : la gestion des comptes est dans l'admin Django.
+    # Gestion des comptes dans l'interface DocHub (administrateurs)
+    path("utilisateurs/", account_views.user_list, name="user_list"),
+    path("utilisateurs/ajouter/", account_views.user_create, name="user_create"),
+    path("utilisateurs/supprimer/", account_views.users_delete, name="users_delete"),
+    path("utilisateurs/<int:pk>/", account_views.user_update, name="user_update"),
+    path("utilisateurs/<int:pk>/mot-de-passe/", account_views.user_password, name="user_password"),
+    # La même gestion dans l'admin Django
     path("administration/", RedirectView.as_view(pattern_name="admin:users_user_changelist", permanent=False),
          name="admin_space"),
     # API JWT (US-06)
