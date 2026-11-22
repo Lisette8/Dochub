@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load evenements_extras %}
+{% block title %}Supprimer l'événement — DocHub{% endblock %}
+{% block extra_css %}{% include "evenements/_styles.html" %}{% endblock %}
+{% block nav_admin_evenements %}active{% endblock %}
+
+{% block content %}
+<div class="ev-page">
+  <div class="ev-crumb">
+    <a href="{% url 'evenements:gestion' %}">Événements</a> /
+    <a href="{% url 'evenements:detail' evenement.pk %}">{{ evenement.titre|truncatechars:40 }}</a> / Supprimer
+  </div>
+  <div class="page-head">
+    <div>
+      <div class="ev-title-row">
+        <h1>Supprimer l'événement</h1>
+        <span class="badge vue-admin">{% include "partials/icon.html" with name="shield" %} Vue administrateur</span>
+      </div>
+      <p>Cette action est définitive.</p>
+    </div>
+  </div>
+
+  <section class="card ev-danger-zone" style="max-width:640px">
+    <div class="ev-item" style="border:0; margin:0; padding:0">
+      <div class="ev-date{% if not evenement.est_a_venir %} passe{% endif %}">
+        <span class="jour">{{ evenement.date_evenement|date:"j" }}</span>
+        <span class="mois">{{ evenement.date_evenement|mois_court }}</span>
+      </div>
+      <div class="ev-item-body">
+        <span class="ev-item-title">{{ evenement.titre }}</span>
+        <div class="ev-meta">
+          <span>{% include "partials/icon.html" with name="calendar" %} {{ evenement.date_evenement|date:"l j F Y" }}</span>
+          <span>{% include "partials/icon.html" with name="clock" %} {{ evenement|horaire }}</span>
+          <span>{% include "partials/icon.html" with name="pin" %} {{ evenement.lieu }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ev-warning">
+      {% include "partials/icon.html" with name="trash" %}
+      <div>
+        Voulez-vous vraiment supprimer cet événement ?
+        {% if evenement.nombre_participants %}
+          <strong>{{ evenement.nombre_participants }} inscription{{ evenement.nombre_participants|pluralize }}</strong> {{ evenement.nombre_participants|pluralize:"sera,seront" }} également supprimée{{ evenement.nombre_participants|pluralize }}.
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="post" class="ev-form-actions">
+      {% csrf_token %}
+      <a class="btn secondary" href="{% url 'evenements:detail' evenement.pk %}">Annuler</a>
+      <button type="submit" class="btn" style="background:var(--danger)">{% include "partials/icon.html" with name="trash" %} Oui, supprimer</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{# Styles du module Événements, inclus dans chaque page du module (block extra_css). #}
+<style>
+/* ================= DocHub — Module Événements =================
+   S'appuie sur les variables et composants de static/css/dochub.css. */
+.ev-page { --ev-h: 560px; min-width: 0; }
+
+/* Couleurs des étiquettes (3 variantes, comme la maquette) */
+.c0 { --ev-bg: var(--indigo-soft); --ev-fg: var(--indigo); }
+.c1 { --ev-bg: #FFEDD5;            --ev-fg: #C2410C; }
+.c2 { --ev-bg: #F3E8FF;            --ev-fg: #7E22CE; }
+
+/* ---------- Mise en page : 2 colonnes qui ne débordent jamais ---------- */
+.ev-layout {
+  display: grid; gap: 16px; align-items: start;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.ev-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ev-page .card { min-width: 0; padding: 20px; }
+@media (max-width: 900px) { .ev-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Effets au survol des cartes */
+.ev-hover { transition: box-shadow .15s ease, border-color .15s ease; }
+.ev-hover:hover { border-color: var(--brume); box-shadow: 0 6px 18px rgba(79, 70, 229, .08); }
+
+/* Barre de défilement fine (vue Liste + panneau "À venir") */
+.ev-scroll {
+  max-height: var(--ev-h); overflow-y: auto; overflow-x: hidden;
+  margin-right: -8px; padding-right: 8px;
+  scrollbar-width: thin; scrollbar-color: #D1D5DB transparent;
+}
+.ev-scroll::-webkit-scrollbar { width: 6px; }
+.ev-scroll::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 999px; }
+.ev-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Barre d'outils ---------- */
+.ev-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.ev-nav { display: flex; align-items: center; gap: 10px; }
+.ev-nav h2 { margin: 0; font-size: 1.1rem; min-width: 140px; text-align: center; }
+.ev-arrow {
+  width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-2); background: var(--card); transition: background .15s, color .15s;
+}
+.ev-arrow:hover { background: var(--indigo-soft); color: var(--indigo); }
+.ev-today { font-size: .85rem; font-weight: 600; }
+
+.ev-seg {
+  display: inline-flex; border: 1px solid var(--border); border-radius: 10px;
+  padding: 3px; background: var(--card); gap: 2px; flex-wrap: wrap;
+}
+.ev-seg a {
+  padding: 6px 14px; border-radius: 8px; font-size: .86rem; font-weight: 600;
+  color: var(--text-2); display: inline-flex; align-items: center; gap: 6px;
+  transition: background .15s, color .15s;
+}
+.ev-seg a:hover { background: var(--bg); }
+.ev-seg a.active { background: var(--indigo); color: #fff; }
+.ev-seg .count { font-size: .72rem; padding: 0 7px; border-radius: 999px; background: #F3F4F6; color: var(--muted); }
+.ev-seg a.active .count { background: rgba(255, 255, 255, .22); color: #fff; }
+
+/* ---------- Calendrier mensuel (aucun défilement) ---------- */
+.ev-cal {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.ev-cal-head {
+  padding: 9px 10px; font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+  color: var(--muted); background: #FAFAFB; border-bottom: 1px solid var(--border);
+}
+.ev-cal-head:first-child { border-top-left-radius: 12px; }
+.ev-cal-head:nth-child(7) { border-top-right-radius: 12px; }
+.ev-cal-day {
+  position: relative; min-width: 0; min-height: 78px; padding: 6px;
+  border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.ev-cal-day:nth-child(7n) { border-right: 0; }
+.ev-cal-day.derniere-ligne { border-bottom: 0; }
+.ev-cal-day.derniere-ligne:nth-child(7n+1) { border-bottom-left-radius: 12px; }
+.ev-cal-day.derniere-ligne:nth-child(7n) { border-bottom-right-radius: 12px; }
+.ev-cal-day.hors-mois { background: #FAFAFB; }
+.ev-cal-num {
+  font-size: .82rem; font-weight: 600; color: var(--text-2);
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ev-cal-day.today .ev-cal-num { background: var(--indigo); color: #fff; }
+
+/* Étiquette d'un événement + aperçu au survol */
+.ev-tag { position: relative; min-width: 0; }
+.ev-chip {
+  display: block; padding: 3px 7px; border-radius: 6px; font-size: .72rem; font-weight: 600;
+  background: var(--ev-bg); color: var(--ev-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: filter .15s;
+}
+.ev-chip:hover, .ev-chip:focus { filter: brightness(.95); outline: none; }
+.ev-chip.passe { opacity: .55; }
+.ev-more { font-size: .7rem; color: var(--muted); padding-left: 3px; }
+
+.ev-pop {
+  position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: 240px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, .14); padding: 12px 14px;
+  opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease, visibility .15s;
+  pointer-events: none; color: var(--text); font-weight: 400;
+}
+.ev-tag:hover .ev-pop, .ev-tag:focus-within .ev-pop { opacity: 1; visibility: visible; transform: translateY(0); }
+.ev-cal-day.fin-semaine .ev-pop { left: auto; right: 0; }
+.ev-cal-day.vers-le-haut .ev-pop { top: auto; bottom: calc(100% + 6px); transform: translateY(4px); }
+.ev-cal-day.vers-le-haut .ev-tag:hover .ev-pop,
+.ev-cal-day.vers-le-haut .ev-tag:focus-within .ev-pop { transform: translateY(0); }
+.ev-pop strong { display: block; font-size: .9rem; line-height: 1.3; margin-bottom: 6px; overflow-wrap: anywhere; }
+.ev-pop .ev-meta { flex-direction: column; gap: 3px; }
+.ev-pop .ev-places { margin-top: 8px; }
+.ev-pop-hint { margin-top: 8px; font-size: .74rem; color: var(--indigo); font-weight: 600; }
+
+.ev-cal-foot { margin: 12px 0 0; font-size: .84rem; color: var(--muted); }
+
+/* ---------- Pastille de date (18 / NOV) ---------- */
+.ev-date {
+  width: 46px; flex-shrink: 0; border-radius: 10px; background: var(--indigo-soft);
+  color: var(--indigo); text-align: center; padding: 7px 0 6px; line-height: 1.05;
+}
+.ev-date .jour { display: block; font-size: 1.15rem; font-weight: 700; }
+.ev-date .mois { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em; margin-top: 3px; }
+.ev-date.passe { background: #F3F4F6; color: var(--muted); }
+.ev-date.lg { width: 62px; padding: 10px 0 9px; border-radius: 12px; }
+.ev-date.lg .jour { font-size: 1.55rem; }
+.ev-date.lg .mois { font-size: .7rem; }
+
+/* ---------- Méta-informations (lieu, heure) ---------- */
+.ev-meta { display: flex; flex-wrap: wrap; gap: 3px 12px; color: var(--muted); font-size: .79rem; min-width: 0; }
+.ev-meta span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.ev-meta .icon { width: 13px; height: 13px; }
+
+/* ---------- Jauge des participants ---------- */
+.ev-places { min-width: 0; }
+.ev-places-top { display: flex; justify-content: space-between; gap: 8px; font-size: .76rem; color: var(--text-2); margin-bottom: 5px; }
+.ev-places-top .pct { color: var(--muted); }
+.ev-bar { height: 6px; border-radius: 999px; background: var(--indigo-soft); overflow: hidden; }
+.ev-bar span { display: block; height: 100%; border-radius: 999px; background: var(--indigo); }
+.ev-bar.plein span { background: #9CA3AF; }
+
+/* ---------- Actions d'inscription ---------- */
+.ev-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.ev-actions form { margin: 0; }
+.ev-btn-sm { padding: 7px 14px; font-size: .84rem; border-radius: 9px; }
+.badge.inscrit { background: var(--success-soft); color: var(--success); font-weight: 600; }
+.badge.complet, .badge.passe { background: #F3F4F6; color: var(--muted); }
+.badge.avenir { background: var(--indigo-soft); color: var(--indigo); }
+.badge.encours { background: #FEF3C7; color: #B45309; }
+.ev-link-danger {
+  background: none; border: 0; padding: 0; font: inherit; font-size: .84rem; font-weight: 600;
+  color: var(--danger); cursor: pointer;
+}
+.ev-link-danger:hover { text-decoration: underline; }
+
+/* ---------- Panneau "À venir" ---------- */
+.ev-side h2 { margin-bottom: 2px; }
+.ev-item {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 8px; margin: 0 -8px;
+  border-bottom: 1px solid var(--border); border-radius: 10px; transition: background .15s;
+}
+.ev-item:last-child { border-bottom: 0; }
+.ev-item:hover { background: #FAFAFF; }
+.ev-item-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.ev-item-title {
+  font-weight: 600; color: var(--text); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.ev-item-title:hover { color: var(--indigo); }
+.ev-item .ev-actions { margin-top: 4px; }
+.ev-empty { color: var(--muted); font-size: .9rem; padding: 8px 0; margin: 0; }
+
+/* ---------- Vue Liste ---------- */
+.ev-list-month {
+  position: sticky; top: 0; z-index: 2; background: var(--card);
+  font-size: .76rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); padding: 10px 0 6px;
+}
+.ev-row {
+  display: flex; gap: 14px; align-items: flex-start; padding: 14px 8px; margin: 0 -8px;
+  border-bottom: 1px solid var(--border); border-radius: 10px; transition: background .15s;
+}
+.ev-row:last-child { border-bottom: 0; }
+.ev-row:hover { background: #FAFAFF; }
+.ev-row-body { flex: 1; min-width: 0; }
+.ev-row-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.ev-row-title a { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.ev-row-title a:hover { color: var(--indigo); }
+.ev-row-desc { margin: 6px 0 0; color: var(--text-2); font-size: .86rem; overflow-wrap: anywhere; }
+.ev-row-body .ev-places { max-width: 280px; margin-top: 8px; }
+.ev-row-side { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.ev-row-side .ev-actions { margin-top: 0; justify-content: flex-end; }
+
+/* ---------- Page détail ---------- */
+.ev-back {
+  display: inline-flex; align-items: center; gap: 6px; font-size: .86rem;
+  font-weight: 600; color: var(--muted); margin-bottom: 12px; transition: color .15s;
+}
+.ev-back:hover { color: var(--indigo); }
+.ev-back .icon { width: 16px; height: 16px; transition: transform .15s; }
+.ev-back:hover .icon { transform: translateX(-3px); }
+.ev-head { display: flex; gap: 16px; align-items: center; min-width: 0; margin-bottom: 18px; }
+.ev-head-body { min-width: 0; flex: 1; }
+.ev-head h1 { margin: 0 0 6px; font-size: 1.6rem; line-height: 1.2; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.ev-head .ev-meta { font-size: .88rem; }
+.ev-head .ev-meta .icon { width: 15px; height: 15px; }
+.ev-description { color: var(--text-2); line-height: 1.65; overflow-wrap: anywhere; }
+.ev-description p { margin: 0 0 10px; }
+.ev-description p:last-child { margin-bottom: 0; }
+.ev-countdown {
+  display: flex; align-items: center; gap: 10px; background: var(--indigo-soft);
+  color: var(--indigo); border-radius: 10px; padding: 10px 12px; font-weight: 600;
+  font-size: .88rem; margin-bottom: 8px;
+}
+.ev-countdown.passe { background: #F3F4F6; color: var(--muted); }
+.ev-info div { gap: 16px; align-items: baseline; padding: 8px 0; }
+.ev-info dt { flex-shrink: 0; }
+.ev-info dd { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.ev-participation { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.ev-participation .ev-places { flex: 1; min-width: 200px; }
+.ev-participation .ev-actions { margin-top: 0; }
+.ev-participants { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.ev-participants .badge { background: var(--bg); }
+.ev-admin-actions { display: flex; gap: 8px; margin-top: 14px; }
+.ev-admin-actions .btn { flex: 1; padding: 9px 12px; }
+.btn.danger { background: var(--card); color: var(--danger); border-color: var(--danger-soft); }
+.btn.danger:hover { background: var(--danger-soft); }
+.ev-other { display: flex; gap: 12px; align-items: center; padding: 10px 8px; margin: 0 -8px; border-radius: 10px; transition: background .15s; }
+.ev-other:hover { background: var(--indigo-soft); }
+.ev-other .ev-item-title { -webkit-line-clamp: 1; }
+.ev-other-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 1100px) { .ev-other-list { grid-template-columns: minmax(0, 1fr); } }
+
+@media (max-width: 720px) {
+  .ev-head { align-items: flex-start; }
+  .ev-head h1 { font-size: 1.3rem; }
+  .ev-row { flex-wrap: wrap; }
+  .ev-row-side { width: 100%; align-items: stretch; }
+  .ev-cal-day { min-height: 64px; padding: 4px; }
+  .ev-chip { font-size: .66rem; padding: 2px 4px; }
+  .ev-pop { display: none; }   /* pas de survol sur écran tactile */
+}
+
+/* ================= Rôle Administrateur ================= */
+.badge .icon { width: 12px; height: 12px; }
+.badge.organisateur, .badge.vue-admin, .badge.presque {
+  display: inline-flex; align-items: center; gap: 5px; font-weight: 600;
+}
+.badge.organisateur { background: #F3F4F6; color: var(--text-2); }
+.badge.presque { background: #FFEDD5; color: #C2410C; }
+.badge.vue-admin { background: var(--indigo-soft); color: var(--indigo); }
+.ev-title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ev-btn-sm .icon { width: 15px; height: 15px; }
+
+/* Événement sélectionné ("Participants affichés") */
+.ev-chip.selection { background: var(--indigo); color: #fff; opacity: 1; }
+.ev-item.selection { background: var(--indigo-soft); border-bottom-color: transparent; }
+.ev-item.selection:hover { background: var(--indigo-soft); }
+.ev-item.selection .ev-date { background: var(--card); }
+
+/* En-tête de carte avec actions à droite */
+.ev-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.ev-card-head > div:first-child { min-width: 0; }
+.ev-card-head h2 { overflow-wrap: anywhere; }
+.ev-card-head .sub { margin-bottom: 0; }
+.ev-card-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ev-close {
+  width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.ev-close:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+
+/* ---------- Tableaux (participants, gestion) ---------- */
+.ev-table-wrap { margin-top: 14px; max-height: 420px; overflow-y: auto; scrollbar-width: thin; }
+.ev-table { width: 100%; border-collapse: collapse; font-size: .88rem; table-layout: auto; }
+.ev-table th {
+  position: sticky; top: 0; z-index: 1; background: #FAFAFB; text-align: left;
+  font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); padding: 9px 12px; border-bottom: 1px solid var(--border);
+}
+.ev-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow-wrap: anywhere; }
+.ev-table tbody tr { transition: background .15s; }
+.ev-table tbody tr:hover { background: #FAFAFF; }
+.ev-table tbody tr:last-child td { border-bottom: 0; }
+.ev-table .num { width: 36px; color: var(--muted); }
+.ev-table .right { text-align: right; }
+.ev-table .muted { color: var(--muted); }
+.ev-table .muted a { color: var(--muted); }
+.ev-table .muted a:hover { color: var(--indigo); }
+.ev-person { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.ev-person-name { font-weight: 600; color: var(--text); }
+.avatar.sm { width: 28px; height: 28px; font-size: .7rem; }
+.ev-presence {
+  display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border);
+  background: var(--card); color: var(--muted); border-radius: 999px; padding: 3px 10px;
+  font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.ev-presence .icon { width: 13px; height: 13px; }
+.ev-presence:hover { border-color: var(--lavande); color: var(--indigo); }
+.ev-presence.oui { background: var(--success-soft); border-color: var(--success-soft); color: var(--success); }
+.ev-presence.oui:hover { filter: brightness(.97); }
+
+/* ---------- Page Gestion ---------- */
+.ev-stats { margin-bottom: 16px; }
+.ev-stats .stat-value { font-size: 1.6rem; }
+.ev-search {
+  display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px;
+  padding: 7px 12px; color: var(--muted); background: var(--card); min-width: 0; flex: 1; max-width: 320px;
+}
+.ev-search:focus-within { border-color: var(--lavande); outline: 2px solid var(--brume); }
+.ev-search input { border: 0; outline: 0; font: inherit; font-size: .88rem; flex: 1; min-width: 0; background: transparent; color: var(--text); }
+.ev-gestion-title a { font-weight: 600; color: var(--text); }
+.ev-gestion-title a:hover { color: var(--indigo); }
+.ev-gestion-title .ev-meta { margin-top: 3px; }
+.ev-gestion .ev-places { min-width: 140px; }
+.ev-icon-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
+.ev-icon-btn {
+  width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--card);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--text-2);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ev-icon-btn .icon { width: 16px; height: 16px; }
+.ev-icon-btn:hover { background: var(--indigo-soft); color: var(--indigo); border-color: var(--brume); }
+.ev-icon-btn.danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+.ev-gestion .ev-table-wrap { max-height: 600px; }
+.ev-gestion .ev-date-cell { white-space: nowrap; }
+.ev-gestion .ev-date-cell .ev-meta span { overflow-wrap: normal; }
+
+/* ---------- Formulaire Créer / Modifier ---------- */
+.ev-crumb { font-size: .84rem; color: var(--muted); margin-bottom: 8px; }
+.ev-crumb a { color: var(--indigo); font-weight: 600; }
+.ev-crumb a:hover { text-decoration: underline; }
+.ev-form .card h2 { margin-bottom: 2px; }
+.ev-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; }
+@media (max-width: 720px) { .ev-form-grid { grid-template-columns: minmax(0, 1fr); } }
+.ev-field { margin-bottom: 16px; min-width: 0; }
+.ev-field:last-child { margin-bottom: 0; }
+.ev-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 600; font-size: .88rem; margin-bottom: 6px; }
+.ev-label .req { color: var(--danger); }
+.ev-counter { font-weight: 500; font-size: .76rem; color: var(--muted); }
+.ev-counter.limite { color: var(--danger); }
+.ev-field input[type=text], .ev-field input[type=number], .ev-field input[type=datetime-local], .ev-field textarea {
+  width: 100%; padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px;
+  font: inherit; font-size: .92rem; background: var(--card); color: var(--text); transition: border-color .15s;
+}
+.ev-field textarea { resize: vertical; min-height: 96px; }
+.ev-field input:hover, .ev-field textarea:hover { border-color: #D1D5DB; }
+.ev-field input:focus, .ev-field textarea:focus { outline: 2px solid var(--brume); border-color: var(--lavande); }
+.ev-field.has-error input, .ev-field.has-error textarea { border-color: var(--danger); }
+.ev-help { font-size: .78rem; color: var(--muted); margin-top: 5px; }
+.ev-input-icon { position: relative; }
+.ev-input-icon .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
+.ev-field .ev-input-icon input { padding-left: 36px; }
+.ev-stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ev-stepper .ev-field-cap { width: 120px; }
+.ev-stepper input[type=number] { text-align: center; -moz-appearance: textfield; }
+.ev-stepper input::-webkit-outer-spin-button, .ev-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ev-step {
+  width: 38px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--card);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-2);
+  transition: background .15s, color .15s;
+}
+.ev-step:hover { background: var(--indigo-soft); color: var(--indigo); }
+.ev-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ev-preset {
+  border: 1px solid var(--border); background: var(--card); color: var(--text-2); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.ev-preset:hover { border-color: var(--lavande); color: var(--indigo); }
+.ev-preset.active { background: var(--indigo-soft); border-color: var(--brume); color: var(--indigo); }
+.ev-form-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.ev-form-errors { margin-bottom: 16px; }
+
+/* Aperçu en direct */
+.ev-apercu-label { font-size: .72rem; font-weight: 700; letter-spacing: .06em; color: var(--indigo); text-transform: uppercase; margin: 0 0 2px; }
+.ev-preview { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 12px; }
+.ev-preview .ev-item { padding: 0; margin: 0; border: 0; }
+.ev-preview .ev-item:hover { background: none; }
+.ev-preview-desc { font-size: .82rem; color: var(--text-2); margin: 10px 0; overflow-wrap: anywhere; }
+.ev-preview .btn { width: 100%; margin-top: 12px; cursor: default; }
+.ev-preview-note { font-size: .72rem; color: var(--muted); text-align: center; margin-top: 6px; }
+.ev-placeholder { color: #9CA3AF; }
+
+/* Suppression */
+.ev-danger-zone { border-color: var(--danger-soft); }
+.ev-warning { display: flex; gap: 10px; background: var(--danger-soft); color: #991B1B; border-radius: 10px; padding: 12px 14px; font-size: .9rem; margin: 14px 0 18px; }
+
+@media (max-width: 720px) {
+  /* Tableaux en "cartes" sur petit écran : jamais de défilement horizontal */
+  .ev-table thead { display: none; }
+  .ev-table, .ev-table tbody, .ev-table tr, .ev-table td { display: block; width: 100%; }
+  .ev-table tr { border-bottom: 1px solid var(--border); padding: 8px 0; }
+  .ev-table td { border: 0; padding: 4px 0; text-align: left; }
+  .ev-table td.num { display: none; }
+  .ev-table .right, .ev-icon-actions { text-align: left; justify-content: flex-start; }
+}
+</style>

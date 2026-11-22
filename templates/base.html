@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/dochub.css' %}">
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
 {% block body %}
@@ -20,8 +21,13 @@
       <a href="{% url 'users:dashboard' %}" class="{% block nav_dashboard %}{% endblock %}">{% include "partials/icon.html" with name="home" %} Tableau de bord</a>
       <a class="disabled" title="Module Documents — à venir">{% include "partials/icon.html" with name="file" %} Documents</a>
       <a class="disabled" title="Module Actualités — à venir">{% include "partials/icon.html" with name="news" %} Actualités</a>
+
+      <a href="{% url 'evenements:liste' %}" class="{% block nav_evenements %}{% endblock %}">{% include "partials/icon.html" with name="calendar" %} Événements</a>
+      <a class="disabled" title="Module Support — à venir">{% include "partials/icon.html" with name="support" %} Support</a>
+
       <a class="disabled" title="Module Événements — à venir">{% include "partials/icon.html" with name="calendar" %} Événements</a>
       <a href="{% url 'support:liste' %}" class="{% block nav_support %}{% endblock %}">{% include "partials/icon.html" with name="support" %} Support</a>
+
       <a class="disabled" title="Assistant IA — à venir">{% include "partials/icon.html" with name="sparkle" %} Assistant IA</a>
 
       {% if user.is_admin %}
@@ -29,8 +35,12 @@
 
         {# La gestion des comptes se fait dans l'admin Django (CRUD, statuts, rôles). #}
         <a href="{% url 'admin:users_user_changelist' %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+
+        <a href="{% url 'evenements:gestion' %}" class="{% block nav_admin_evenements %}{% endblock %}">{% include "partials/icon.html" with name="calendar" %} Événements</a>
+
         <a href="{% url 'statistiques:compteurs' %}" class="{% block nav_stats %}{% endblock %}">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
         <a href="{% url 'users:user_list' %}" class="{% block nav_users %}{% endblock %}">{% include "partials/icon.html" with name="users" %} Utilisateurs</a>
+
         <a class="disabled" title="Module Statistiques — à venir">{% include "partials/icon.html" with name="chart" %} Statistiques</a>
 
       {% endif %}

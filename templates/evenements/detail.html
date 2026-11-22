@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load evenements_extras %}
+{% block title %}{{ evenement.titre }} — Événements — DocHub{% endblock %}
+{% block extra_css %}{% include "evenements/_styles.html" %}{% endblock %}
+{% block nav_evenements %}active{% endblock %}
+
+{% block content %}
+<div class="ev-page">
+  {% if user.is_admin %}
+    <div class="ev-crumb"><a href="{% url 'evenements:gestion' %}">Gestion des événements</a> / <a href="{% url 'evenements:liste' %}?mois={{ mois_param }}">Calendrier</a> / {{ evenement.titre|truncatechars:40 }}</div>
+  {% else %}
+    <a class="ev-back" href="{% url 'evenements:liste' %}?mois={{ mois_param }}">{% include "partials/icon.html" with name="arrow-left" %} Retour aux événements</a>
+  {% endif %}
+
+  {# ================= En-tête ================= #}
+  <div class="ev-head">
+    <div class="ev-date lg{% if not evenement.est_a_venir %} passe{% endif %}">
+      <span class="jour">{{ evenement.date_evenement|date:"j" }}</span>
+      <span class="mois">{{ evenement.date_evenement|mois_court }}</span>
+    </div>
+    <div class="ev-head-body">
+      <h1>{{ evenement.titre }}</h1>
+      <div class="ev-meta">
+        <span>{% include "partials/icon.html" with name="calendar" %} {{ evenement.date_evenement|date:"l j F Y" }}</span>
+        <span>{% include "partials/icon.html" with name="clock" %} {{ evenement|horaire }}</span>
+        <span>{% include "partials/icon.html" with name="pin" %} {{ evenement.lieu }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ev-layout">
+    {# ================= Colonne gauche ================= #}
+    <div class="ev-col">
+      <section class="card ev-hover">
+        <h2>Description</h2>
+        <p class="sub">Présentation de l'événement</p>
+        {% if evenement.description %}
+          <div class="ev-description">{{ evenement.description|linebreaks }}</div>
+        {% else %}
+          <p class="ev-empty">Aucune description n'a été fournie pour cet événement.</p>
+        {% endif %}
+      </section>
+
+      {% if user.is_admin %}
+        {# Administrateur : organisateur, il voit le détail de chaque participant #}
+        {% with evt=evenement %}{% include "evenements/_participants.html" %}{% endwith %}
+      {% else %}
+        <section class="card ev-hover">
+          <h2>Participants</h2>
+          <p class="sub">
+            {% if evenement.capacite is None %}Places illimitées
+            {% elif evenement.est_complet %}Plus aucune place disponible
+            {% else %}{{ evenement.places_restantes }} place{{ evenement.places_restantes|pluralize }} restante{{ evenement.places_restantes|pluralize }}{% endif %}
+          </p>
+          <div class="ev-participation">
+            {% with evt=evenement %}
+              {% include "evenements/_places.html" %}
+              {% include "evenements/_inscription.html" %}
+            {% endwith %}
+          </div>
+        </section>
+      {% endif %}
+
+      {% if autres_a_venir %}
+        <section class="card ev-hover">
+          <h2>Autres événements à venir</h2>
+          <p class="sub">À ne pas manquer</p>
+          <div class="ev-other-list">
+            {% for evt in autres_a_venir %}
+              <a class="ev-other" href="{% url 'evenements:detail' evt.pk %}" title="{{ evt.titre }}">
+                <div class="ev-date">
+                  <span class="jour">{{ evt.date_evenement|date:"j" }}</span>
+                  <span class="mois">{{ evt.date_evenement|mois_court }}</span>
+                </div>
+                <div class="ev-item-body">
+                  <span class="ev-item-title">{{ evt.titre }}</span>
+                  <div class="ev-meta"><span>{% include "partials/icon.html" with name="clock" %} {{ evt|horaire }}</span></div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+    </div>
+
+    {# ================= Colonne droite : informations pratiques ================= #}
+    <div class="ev-col">
+      <aside class="card ev-hover">
+        <h2>Informations</h2>
+        <p class="sub">Détails pratiques</p>
+
+        {% if evenement.est_a_venir %}
+          <div class="ev-countdown">{% include "partials/icon.html" with name="clock" %} Dans {{ evenement.date_evenement|timeuntil }}</div>
+        {% elif evenement.est_en_cours %}
+          <div class="ev-countdown">{% include "partials/icon.html" with name="clock" %} En cours, se termine dans {{ evenement.date_fin|timeuntil }}</div>
+        {% else %}
+          <div class="ev-countdown passe">{% include "partials/icon.html" with name="clock" %} A eu lieu il y a {{ evenement.date_evenement|timesince }}</div>
+        {% endif %}
+
+        <dl class="info-list ev-info">
+          <div><dt>Date</dt><dd>{{ evenement.date_evenement|date:"d/m/Y" }}</dd></div>
+          <div><dt>Horaire</dt><dd>{{ evenement|horaire }}</dd></div>
+          <div><dt>Lieu</dt><dd>{{ evenement.lieu }}</dd></div>
+          <div><dt>Statut</dt><dd><span class="badge {% if evenement.est_a_venir %}avenir{% elif evenement.est_en_cours %}encours{% else %}passe{% endif %}">{{ evenement.statut }}</span></dd></div>
+          <div><dt>Capacité</dt><dd>{% if evenement.capacite is None %}Illimitée{% else %}{{ evenement.capacite }} place{{ evenement.capacite|pluralize }}{% endif %}</dd></div>
+          {% if evenement.cree_par %}<div><dt>Organisé par</dt><dd>{{ evenement.cree_par.get_full_name|default:evenement.cree_par.email }}</dd></div>{% endif %}
+          <div><dt>Publié le</dt><dd>{{ evenement.created_at|date:"d/m/Y" }}</dd></div>
+        </dl>
+
+        {% if user.is_admin %}
+          <div class="ev-admin-actions">
+            <a class="btn" href="{% url 'evenements:modifier' evenement.pk %}">{% include "partials/icon.html" with name="edit" %} Modifier</a>
+            <a class="btn danger" href="{% url 'evenements:supprimer' evenement.pk %}">{% include "partials/icon.html" with name="trash" %} Supprimer</a>
+          </div>
+        {% endif %}
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}
