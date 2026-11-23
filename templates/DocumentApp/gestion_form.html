@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Modifier {{ object.titreDocument }}{% else %}Déposer un document{% endif %} — DocHub{% endblock %}
+{% block nav_documents_admin %}active{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 0 auto;">
+
+  {# Fil d'Ariane #}
+  <div style="margin-bottom: 16px; font-size: 0.85rem; color: var(--muted);">
+    <a href="{% url 'DocumentApp:gestion' %}" style="color: var(--muted); text-decoration: none;">Gestion des documents</a>
+    <span style="margin: 0 8px;">/</span>
+    <span style="color: var(--text);">{% if object %}Modifier les métadonnées{% else %}Déposer un document{% endif %}</span>
+  </div>
+
+  {# En-tête de page #}
+  <div class="page-head" style="margin-bottom: 24px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <h1 style="margin: 0;">{% if object %}Modifier les métadonnées{% else %}Déposer un document{% endif %}</h1>
+        <span class="badge admin">{% include "partials/icon.html" with name="shield" %} Module Document</span>
+      </div>
+      <p style="margin-top: 6px;">
+        {% if object %}
+          Mettez à jour les informations, la thématique ou remplacez le fichier du document.
+        {% else %}
+          Déposez une ressource documentaire (PDF, Markdown ou Texte) avec ses métadonnées officielles.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  {# Alertes d'erreurs globales #}
+  {% if form.non_field_errors %}
+    <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--danger); background: var(--danger-soft); padding: 14px 18px;">
+      <div style="font-weight: 600; color: var(--danger); margin-bottom: 4px;">Veuillez corriger les erreurs suivantes :</div>
+      {% for error in form.non_field_errors %}
+        <div style="color: var(--danger); font-size: 0.88rem;">• {{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate id="document-form">
+    {% csrf_token %}
+
+    {# SECTION 1 : Métadonnées du document #}
+    <div class="card" style="margin-bottom: 20px; padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <span class="stat-icon" style="width: 32px; height: 32px; border-radius: 8px;">
+          {% include "partials/icon.html" with name="file" %}
+        </span>
+        <div>
+          <h2 style="margin: 0; font-size: 1.05rem;">Métadonnées principales</h2>
+          <span class="cell-hint">Identification, classification et type de la ressource</span>
+        </div>
+      </div>
+
+      {# Titre #}
+      <div class="field{% if form.titreDocument.errors %} has-error{% endif %}" style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+          <label for="{{ form.titreDocument.id_for_label }}" style="font-weight: 600; font-size: 0.88rem;">
+            Titre du document <span style="color: var(--danger);">*</span>
+          </label>
+          <span class="cell-hint" id="titre-counter" style="font-size: 0.78rem;">0 / 200</span>
+        </div>
+        {{ form.titreDocument }}
+        {% if form.titreDocument.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+            {% for err in form.titreDocument.errors %}{{ err }}{% endfor %}
+          </div>
+        {% else %}
+          <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Minimum 3 caractères, maximum 200 caractères.</div>
+        {% endif %}
+      </div>
+
+      {# Grille 2 colonnes : Thématique & Type #}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        {# Thématique #}
+        <div class="field{% if form.thematique.errors %} has-error{% endif %}">
+          <label for="{{ form.thematique.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Thématique <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.thematique }}
+          {% if form.thematique.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.thematique.errors %}{{ err }}{% endfor %}
+            </div>
+          {% else %}
+            <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Domaine métier auquel ce document est rattaché.</div>
+          {% endif %}
+        </div>
+
+        {# Type de document #}
+        <div class="field{% if form.type_document.errors %} has-error{% endif %}">
+          <label for="{{ form.type_document.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Type de document <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.type_document }}
+          {% if form.type_document.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.type_document.errors %}{{ err }}{% endfor %}
+            </div>
+          {% else %}
+            <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Doit correspondre strictement au format du fichier lié.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# SECTION 2 : Fichier source #}
+    <div class="card" style="margin-bottom: 20px; padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <span class="stat-icon" style="width: 32px; height: 32px; border-radius: 8px;">
+          {% include "partials/icon.html" with name="download" %}
+        </span>
+        <div>
+          <h2 style="margin: 0; font-size: 1.05rem;">Fichier associé</h2>
+          <span class="cell-hint">Fichier numérique source (PDF, Markdown ou Texte)</span>
+        </div>
+      </div>
+
+      {# Fichier existant si modification #}
+      {% if object and object.fichier %}
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+            <span class="badge {% if object.extension == 'PDF' %}danger{% elif object.extension == 'MD' %}admin{% else %}ok{% endif %}" style="font-size: 0.78rem; padding: 4px 10px;">
+              {{ object.extension }}
+            </span>
+            <div style="min-width: 0;">
+              <div style="font-weight: 600; font-size: 0.9rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                {{ object.nom_fichier }}
+              </div>
+              <div class="cell-hint" style="font-size: 0.8rem;">
+                Taille actuelle : {{ object.taille_lisible }} · Fichier actif
+              </div>
+            </div>
+          </div>
+          <a class="btn secondary" href="{% url 'DocumentApp:telecharger' object.pk %}" target="_blank" style="padding: 6px 14px; font-size: 0.82rem; height: auto;">
+            {% include "partials/icon.html" with name="download" %} Télécharger
+          </a>
+        </div>
+      {% endif %}
+
+      {# Zone d'upload stylisée #}
+      <div class="field{% if form.fichier.errors %} has-error{% endif %}">
+        <label for="{{ form.fichier.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 8px; display: block;">
+          {% if object %}Remplacer le fichier (facultatif){% else %}Sélectionner le fichier <span style="color: var(--danger);">*</span>{% endif %}
+        </label>
+
+        {# Boîte d'upload stylisée avec interaction drag/clic #}
+        <div id="drop-zone" style="border: 2px dashed var(--border); border-radius: 12px; padding: 24px 20px; text-align: center; background: #FAFAFD; cursor: pointer; transition: all 0.2s ease;">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--indigo-soft); color: var(--indigo); margin-bottom: 10px;">
+            {% include "partials/icon.html" with name="file" %}
+          </div>
+          <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;" id="drop-title">
+            Cliquez pour choisir un fichier ou glissez-déposez ici
+          </div>
+          <div class="cell-hint" id="drop-hint" style="font-size: 0.82rem; margin-bottom: 12px;">
+            Formats autorisés : <strong>.pdf</strong>, <strong>.md</strong>, <strong>.markdown</strong>, <strong>.txt</strong> — Taille maximale : <strong>20 Mo</strong>
+          </div>
+
+          {# Input fichier réel (caché visuellement, activé au clic) #}
+          <div style="display: none;">
+            {{ form.fichier }}
+          </div>
+
+          <button type="button" class="btn secondary" id="browse-btn" style="padding: 7px 18px; font-size: 0.84rem; pointer-events: none;">
+            {% include "partials/icon.html" with name="plus" %} Parcourir les fichiers
+          </button>
+        </div>
+
+        {# Affichage dynamique du fichier sélectionné #}
+        <div id="file-chosen-banner" style="display: none; margin-top: 10px; padding: 10px 14px; background: var(--indigo-soft); border: 1px solid var(--brume); border-radius: 8px; font-size: 0.85rem; color: var(--indigo);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <strong>Fichier sélectionné :</strong> <span id="chosen-file-name"></span> (<span id="chosen-file-size"></span>)
+            </div>
+            <button type="button" id="clear-file-btn" style="background: none; border: 0; color: var(--indigo); cursor: pointer; font-weight: 600; font-size: 0.82rem;">
+              ✕ Annuler le choix
+            </button>
+          </div>
+        </div>
+
+        {% if form.fichier.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 8px; font-weight: 500;">
+            {% for err in form.fichier.errors %}{{ err }}{% endfor %}
+          </div>
+        {% elif object %}
+          <div class="cell-hint" style="margin-top: 6px; font-size: 0.8rem;">
+            Laissez ce champ vide pour conserver le fichier actuel.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# SECTION 3 : Description détaillée #}
+    <div class="card" style="margin-bottom: 24px; padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <span class="stat-icon" style="width: 32px; height: 32px; border-radius: 8px;">
+          {% include "partials/icon.html" with name="news" %}
+        </span>
+        <div>
+          <h2 style="margin: 0; font-size: 1.05rem;">Description détaillée</h2>
+          <span class="cell-hint">Notes explicatives, mots-clés ou contexte d'usage</span>
+        </div>
+      </div>
+
+      <div class="field{% if form.descDocument.errors %} has-error{% endif %}">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+          <label for="{{ form.descDocument.id_for_label }}" style="font-weight: 600; font-size: 0.88rem;">
+            Description
+          </label>
+          <span class="cell-hint" id="desc-counter" style="font-size: 0.78rem;">0 / 1000</span>
+        </div>
+        {{ form.descDocument }}
+        {% if form.descDocument.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+            {% for err in form.descDocument.errors %}{{ err }}{% endfor %}
+          </div>
+        {% else %}
+          <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Facultatif — Maximum 1000 caractères. Utilisé pour la recherche multi-critères.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ACTIONS DU FORMULAIRE #}
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 40px;">
+      <a class="btn secondary" href="{% url 'DocumentApp:gestion' %}" style="padding: 11px 22px;">
+        Annuler
+      </a>
+      <button class="btn" type="submit" style="padding: 11px 26px;">
+        {% include "partials/icon.html" with name="check" %}
+        {% if object %}Enregistrer les modifications{% else %}Déposer le document{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+{# SCRIPT INTERACTIF POUR L'UPLOAD ET LA SYNCHRONISATION DU TYPE #}
+<script>
+(function() {
+  var fileInput = document.getElementById("doc-file-input") || document.querySelector('input[type="file"]');
+  var dropZone = document.getElementById("drop-zone");
+  var banner = document.getElementById("file-chosen-banner");
+  var nameEl = document.getElementById("chosen-file-name");
+  var sizeEl = document.getElementById("chosen-file-size");
+  var clearBtn = document.getElementById("clear-file-btn");
+  var typeSelect = document.getElementById("id_type_document");
+
+  if (!fileInput || !dropZone) return;
+
+  // Clic sur la drop zone
+  dropZone.addEventListener("click", function() {
+    fileInput.click();
+  });
+
+  // Drag & drop
+  ["dragenter", "dragover"].forEach(function(evt) {
+    dropZone.addEventListener(evt, function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.style.borderColor = "var(--indigo)";
+      dropZone.style.background = "var(--indigo-soft)";
+    });
+  });
+
+  ["dragleave", "drop"].forEach(function(evt) {
+    dropZone.addEventListener(evt, function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.style.borderColor = "var(--border)";
+      dropZone.style.background = "#FAFAFD";
+    });
+  });
+
+  dropZone.addEventListener("drop", function(e) {
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      fileInput.files = e.dataTransfer.files;
+      handleFileChange();
+    }
+  });
+
+  fileInput.addEventListener("change", handleFileChange);
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " octets";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " Ko";
+    return (bytes / (1024 * 1024)).toFixed(1) + " Mo";
+  }
+
+  function handleFileChange() {
+    if (fileInput.files && fileInput.files.length > 0) {
+      var f = fileInput.files[0];
+      nameEl.textContent = f.name;
+      sizeEl.textContent = formatBytes(f.size);
+      banner.style.display = "block";
+      dropZone.style.borderColor = "var(--indigo)";
+
+      // Auto-synchronisation du Type avec l'extension du fichier choisi
+      var nom = f.name.toLowerCase();
+      if (typeSelect) {
+        if (nom.endsWith(".pdf")) {
+          typeSelect.value = "PDF";
+        } else if (nom.endsWith(".md") || nom.endsWith(".markdown")) {
+          typeSelect.value = "MD";
+        } else if (nom.endsWith(".txt")) {
+          typeSelect.value = "TXT";
+        }
+      }
+    } else {
+      banner.style.display = "none";
+      dropZone.style.borderColor = "var(--border)";
+    }
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      fileInput.value = "";
+      banner.style.display = "none";
+      dropZone.style.borderColor = "var(--border)";
+    });
+  }
+
+  // Compteurs de caractères
+  function setupCounter(inputId, counterId, maxLen) {
+    var input = document.getElementById(inputId);
+    var counter = document.getElementById(counterId);
+    if (!input || !counter) return;
+    function update() {
+      var len = (input.value || "").length;
+      counter.textContent = len + " / " + maxLen;
+      if (len > maxLen) {
+        counter.style.color = "var(--danger)";
+        counter.style.fontWeight = "bold";
+      } else {
+        counter.style.color = "var(--muted)";
+        counter.style.fontWeight = "normal";
+      }
+    }
+    input.addEventListener("input", update);
+    update();
+  }
+
+  setupCounter("id_titreDocument", "titre-counter", 200);
+  setupCounter("id_descDocument", "desc-counter", 1000);
+})();
+</script>
+{% endblock %}

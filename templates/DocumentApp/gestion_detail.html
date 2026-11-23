@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ document.titreDocument }} — DocHub{% endblock %}
+{% block nav_documents_admin %}active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ document.titreDocument }}</h1>
+    <p><a href="{% url 'DocumentApp:gestion' %}">← Retour à la gestion des documents</a></p>
+  </div>
+  <div class="head-actions">
+    {% if document.fichier %}
+      <a class="btn" href="{% url 'DocumentApp:telecharger' document.pk %}">
+        {% include "partials/icon.html" with name="download" %} Télécharger le fichier
+      </a>
+    {% endif %}
+    <a class="btn secondary" href="{% url 'DocumentApp:gestion_modifier' document.pk %}">
+      {% include "partials/icon.html" with name="edit" %} Modifier les métadonnées
+    </a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; align-items:start;">
+  <div class="card">
+    <h2 style="margin-top:0;">Description</h2>
+    <p style="font-size:0.95rem; line-height:1.6; color:var(--text);">
+      {{ document.descDocument|default:"Aucune description renseignée pour ce document."|linebreaks }}
+    </p>
+
+    {% if document.fichier %}
+    <div style="margin-top:24px; padding:16px; background:#F8FAFC; border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span class="stat-icon" style="width:40px; height:40px; border-radius:8px; background:#EEF2FF; color:var(--indigo);">
+          {% include "partials/icon.html" with name="file" %}
+        </span>
+        <div>
+          <div style="font-weight:600; color:var(--text);">{{ document.nom_fichier }}</div>
+          <div class="cell-hint">{{ document.get_type_document_display }} · {{ document.taille_lisible }}</div>
+        </div>
+      </div>
+      <a class="btn secondary sm" href="{% url 'DocumentApp:telecharger' document.pk %}">
+        Télécharger
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Métadonnées</h3>
+    <dl class="info-list" style="display:grid; grid-template-columns: 1fr; gap:12px; margin:0;">
+      <div>
+        <dt style="font-size:0.75rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Thématique</dt>
+        <dd style="margin:2px 0 0;"><span class="badge">{{ document.get_thematique_display }}</span></dd>
+      </div>
+      <div>
+        <dt style="font-size:0.75rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Format / Type</dt>
+        <dd style="margin:2px 0 0;">
+          {% with tp=document.type_document ext=document.extension %}
+          <span class="badge {% if tp == 'PDF' or ext == 'PDF' %}danger{% elif tp == 'MD' or ext == 'MD' %}admin{% elif tp == 'TXT' or ext == 'TXT' %}ok{% endif %}">
+            {% if tp == 'PDF' or ext == 'PDF' %}PDF
+            {% elif tp == 'MD' or ext == 'MD' %}Markdown
+            {% elif tp == 'TXT' or ext == 'TXT' %}Texte
+            {% else %}{{ document.get_type_document_display }}{% endif %}
+          </span>
+          {% endwith %}
+        </dd>
+      </div>
+      <div>
+        <dt style="font-size:0.75rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Taille du fichier</dt>
+        <dd style="margin:2px 0 0; font-weight:600;">{{ document.taille_lisible }}</dd>
+      </div>
+      <div>
+        <dt style="font-size:0.75rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Déposé par</dt>
+        <dd style="margin:2px 0 0;">{{ document.auteur.get_full_name|default:"Administrateur" }}</dd>
+      </div>
+      <div>
+        <dt style="font-size:0.75rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Date de dépôt</dt>
+        <dd style="margin:2px 0 0;">{{ document.created_at|date:"d/m/Y · H:i" }}</dd>
+      </div>
+      <div>
+        <dt style="font-size:0.75rem; text-transform:uppercase; color:var(--muted); font-weight:700;">Dernière modification</dt>
+        <dd style="margin:2px 0 0;">{{ document.updated_at|date:"d/m/Y · H:i" }}</dd>
+      </div>
+    </dl>
+
+    <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border);">
+      <a class="btn danger" href="{% url 'DocumentApp:gestion_supprimer' document.pk %}" style="width:100%; display:inline-flex; justify-content:center;">
+        {% include "partials/icon.html" with name="trash" %} Supprimer ce document
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

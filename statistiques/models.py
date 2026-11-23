@@ -22,7 +22,6 @@ class Rapport(models.Model):
 
     titre = models.CharField(
         max_length=200,
-        validators=[MinLengthValidator(3, "Le titre doit contenir au moins 3 caractères.")],
     )
     description = models.TextField(
         blank=True,
@@ -53,19 +52,15 @@ class Rapport(models.Model):
         erreurs = {}
         aujourd_hui = timezone.localdate()
 
-        if self.titre and not self.titre.strip():
-            erreurs["titre"] = "Le titre ne peut pas contenir seulement des espaces."
+        # Titre : vide, que des espaces, ou trop court
+        if self.titre is not None:
+            titre_clean = self.titre.strip()
+            if not titre_clean:
+                erreurs["titre"] = "Le titre ne peut pas être vide ou contenir seulement des espaces."
+            elif len(titre_clean) < 3:
+                erreurs["titre"] = "Le titre doit contenir au moins 3 caractères."
 
-        if self.description:
-            desc_clean = self.description.strip()
-            if desc_clean and len(desc_clean) < 10:
-                erreurs["description"] = "La description doit contenir au moins 10 caractères si elle est renseignée."
-
-        if self.note:
-            note_clean = self.note.strip()
-            if note_clean and len(note_clean) < 5:
-                erreurs["note"] = "La note interne doit contenir au moins 5 caractères si elle est renseignée."
-
+        # Dates
         if self.date_debut:
             if self.date_debut < DATE_MIN:
                 erreurs["date_debut"] = "La date de début ne peut pas être avant 2000."
@@ -93,20 +88,29 @@ class Rapport(models.Model):
             date_joined__date__range=(self.date_debut, self.date_fin)
         ).count()
 
-        def _compter(app_label, model_name, **filtres):
+        def _get_model(app_labels, model_name):
+            for app_label in app_labels:
+                try:
+                    return apps.get_model(app_label, model_name)
+                except LookupError:
+                    continue
+            return None
+
+        def _compter(model, **filtres):
+            if model is None:
+                return 0
             try:
-                Model = apps.get_model(app_label, model_name)
-                qs = Model.objects.all()
+                qs = model.objects.all()
                 if filtres:
                     qs = qs.filter(**filtres)
                 return qs.count()
-            except LookupError:
+            except Exception:
                 return 0
 
-        total_documents = _compter("documents", "Document")
-        total_actualites = _compter("actualites", "Actualite")
-        total_evenements = _compter("evenements", "Evenement")
-        tickets_ouverts = _compter("tickets", "Ticket", statut="OUVERT")
+        total_documents = _compter(_get_model(["DocumentApp", "documents"], "Document"))
+        total_actualites = _compter(_get_model(["actualites"], "Actualite"))
+        total_evenements = _compter(_get_model(["evenements"], "Evenement"))
+        tickets_ouverts = _compter(_get_model(["support", "tickets"], "Ticket"), statut="OUVERT")
 
         d_deb = self.date_debut.strftime("%d/%m/%Y")
         d_fin = self.date_fin.strftime("%d/%m/%Y")

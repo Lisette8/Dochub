@@ -111,13 +111,30 @@ class RapportGenererForm(forms.ModelForm):
     def clean_statut(self):
         return self.cleaned_data.get("statut") or Rapport.Statut.NOUVEAU
 
+    def clean_titre(self):
+        titre = self.cleaned_data.get("titre", "")
+        titre = titre.strip() if titre else ""
+        if not titre:
+            raise forms.ValidationError("Le titre ne peut pas être vide.")
+        if len(titre) < 3:
+            raise forms.ValidationError("Le titre doit contenir au moins 3 caractères.")
+        return titre
+
     def clean_description(self):
         desc = self.cleaned_data.get("description", "")
-        return desc.strip() if desc else ""
+        desc = desc.strip() if desc else ""
+        if desc and len(desc) < 10:
+            raise forms.ValidationError("La description doit contenir au moins 10 caractères si elle est renseignée.")
+        return desc
 
     def clean_note(self):
         note = self.cleaned_data.get("note")
-        return note.strip() if note and note.strip() else None
+        if not note or not note.strip():
+            return None
+        note = note.strip()
+        if len(note) < 5:
+            raise forms.ValidationError("La note interne doit contenir au moins 5 caractères si elle est renseignée.")
+        return note
 
     def clean(self):
         cleaned_data = super().clean()
@@ -182,13 +199,30 @@ class RapportModifierForm(forms.ModelForm):
     def clean_statut(self):
         return self.cleaned_data.get("statut") or Rapport.Statut.NOUVEAU
 
+    def clean_titre(self):
+        titre = self.cleaned_data.get("titre", "")
+        titre = titre.strip() if titre else ""
+        if not titre:
+            raise forms.ValidationError("Le titre ne peut pas être vide.")
+        if len(titre) < 3:
+            raise forms.ValidationError("Le titre doit contenir au moins 3 caractères.")
+        return titre
+
     def clean_description(self):
         desc = self.cleaned_data.get("description", "")
-        return desc.strip() if desc else ""
+        desc = desc.strip() if desc else ""
+        if desc and len(desc) < 10:
+            raise forms.ValidationError("La description doit contenir au moins 10 caractères si elle est renseignée.")
+        return desc
 
     def clean_note(self):
         note = self.cleaned_data.get("note")
-        return note.strip() if note and note.strip() else None
+        if not note or not note.strip():
+            return None
+        note = note.strip()
+        if len(note) < 5:
+            raise forms.ValidationError("La note interne doit contenir au moins 5 caractères si elle est renseignée.")
+        return note
 
     def clean(self):
         cleaned_data = super().clean()
@@ -232,8 +266,16 @@ class RapportStatutForm(forms.ModelForm):
 
 
 class RapportFiltreForm(forms.Form):
-    """US-33 : Formulaire de filtres GET pour la liste des rapports (Statut et État d'archivage)."""
+    """US-33 : Formulaire de filtres GET pour la liste des rapports (Recherche, Statut et État d'archivage)."""
 
+    q = forms.CharField(
+        required=False,
+        label="Recherche",
+        widget=forms.TextInput(attrs={
+            "type": "search",
+            "placeholder": "Rechercher par titre, description ou contenu…",
+        }),
+    )
     statut = forms.ChoiceField(
         choices=[("", "Tous les statuts")] + list(Rapport.Statut.choices),
         required=False,

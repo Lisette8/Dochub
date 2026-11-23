@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Supprimer le document — DocHub{% endblock %}
+{% block nav_documents_admin %}active{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Supprimer un document</h1>
+    <p><a href="{% url 'DocumentApp:gestion' %}">← Retour à la gestion des documents</a></p>
+  </div>
+</div>
+
+<div class="card" style="max-width: 560px;">
+  <p style="margin-bottom: 20px;">
+    Êtes-vous sûr de vouloir supprimer le document
+    <strong>« {{ object.titreDocument }} »</strong> ?
+    {% if object.fichier %}
+      <br><span class="cell-hint">Le fichier <strong>{{ object.nom_fichier }}</strong> ({{ object.taille_lisible }}) sera également supprimé définitivement.</span>
+    {% endif %}
+  </p>
+  <div class="form-actions" style="display:flex; gap:10px;">
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn" style="background:var(--danger); border-color:var(--danger);" type="submit">
+        Supprimer définitivement
+      </button>
+    </form>
+    <a class="btn secondary" href="{% url 'DocumentApp:gestion' %}">Annuler</a>
+  </div>
+</div>
+{% endblock %}

@@ -41,24 +41,36 @@ def compteurs(request):
     nb_admins = User.objects.filter(role="ADMIN").count()
 
     # Documents
-    DocModel = _get_model_safely("documents", "Document")
-    nb_documents = DocModel.objects.count() if DocModel else 0
+    DocModel = _get_model_safely("DocumentApp", "Document") or _get_model_safely("documents", "Document")
+    try:
+        nb_documents = DocModel.objects.count() if DocModel else 0
+    except Exception:
+        nb_documents = 0
 
     # Actualités
     ActuModel = _get_model_safely("actualites", "Actualite")
-    nb_actualites = ActuModel.objects.count() if ActuModel else 0
+    try:
+        nb_actualites = ActuModel.objects.count() if ActuModel else 0
+    except Exception:
+        nb_actualites = 0
 
     # Événements
     EventModel = _get_model_safely("evenements", "Evenement")
-    nb_evenements = EventModel.objects.count() if EventModel else 0
+    try:
+        nb_evenements = EventModel.objects.count() if EventModel else 0
+    except Exception:
+        nb_evenements = 0
 
-    # Tickets ouverts (app 'tickets' ou 'support')
-    TicketModel = _get_model_safely("tickets", "Ticket") or _get_model_safely("support", "Ticket")
-    if TicketModel and hasattr(TicketModel, "statut"):
-        nb_tickets_ouverts = TicketModel.objects.filter(statut="OUVERT").count()
-    elif TicketModel:
-        nb_tickets_ouverts = TicketModel.objects.count()
-    else:
+    # Tickets ouverts (app 'support' ou 'tickets')
+    TicketModel = _get_model_safely("support", "Ticket") or _get_model_safely("tickets", "Ticket")
+    try:
+        if TicketModel and hasattr(TicketModel, "statut"):
+            nb_tickets_ouverts = TicketModel.objects.filter(statut="OUVERT").count()
+        elif TicketModel:
+            nb_tickets_ouverts = TicketModel.objects.count()
+        else:
+            nb_tickets_ouverts = 0
+    except Exception:
         nb_tickets_ouverts = 0
 
     stats = {
@@ -81,24 +93,36 @@ def compteurs(request):
 
 @admin_required
 def rapport_list(request):
-    """US-33 : Liste des rapports générés avec filtres par statut, date et archivage."""
-    filtre_form = RapportFiltreForm(request.GET or None)
+    """US-33 : Liste des rapports générés avec filtres par recherche, statut et archivage."""
+    q = request.GET.get("q", "").strip()
+    statut = request.GET.get("statut", "").strip()
+    archive = request.GET.get("archive", "0").strip()
+
     qs = Rapport.objects.all()
 
-    if request.GET and filtre_form.is_valid():
-        statut = filtre_form.cleaned_data.get("statut")
-        if statut:
-            qs = qs.filter(statut=statut)
+    # Recherche multi-mots insensible à la casse (titre, description, note)
+    if q:
+        for word in q.split():
+            qs = qs.filter(
+                Q(titre__icontains=word)
+                | Q(description__icontains=word)
+                | Q(note__icontains=word)
+            )
 
-        archive = filtre_form.cleaned_data.get("archive")
-        if archive == "1":
-            qs = qs.filter(archive=True)
-        elif archive == "0":
-            qs = qs.filter(archive=False)
-        # Si archive == "all" : on ne filtre pas, on affiche actifs ET archivés !
+    # Filtrage par statut de traitement
+    if statut in Rapport.Statut.values:
+        qs = qs.filter(statut=statut)
+
+    # Filtrage par archivage (0 = actifs par défaut, 1 = archivés, all = tous)
+    if archive == "1":
+        qs = qs.filter(archive=True)
+    elif archive == "all":
+        pass  # Affiche actifs et archivés
     else:
-        # Par défaut au chargement initial : uniquement les rapports actifs
+        archive = "0"
         qs = qs.filter(archive=False)
+
+    filtered = bool(q or statut or archive in ("1", "all"))
 
     paginator = Paginator(qs, 10)  # 10 rapports par page
     page_number = request.GET.get("page")
@@ -106,8 +130,15 @@ def rapport_list(request):
 
     return render(request, "statistiques/rapport_list.html", {
         "page_obj": page_obj,
-        "filtre_form": filtre_form,
         "total_rapports": qs.count(),
+        "total_global": Rapport.objects.count(),
+        "params": {
+            "q": q,
+            "statut": statut,
+            "archive": archive,
+        },
+        "statuts": Rapport.Statut.choices,
+        "filtered": filtered,
     })
 
 

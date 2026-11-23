@@ -12,25 +12,34 @@
   </div>
 </div>
 
-<form class="filters" method="get" role="search">
-  <label class="search">{% include "partials/icon.html" with name="search" %}
-    <input type="search" name="q" value="{{ params.q }}" placeholder="Titre ou contenu…" aria-label="Rechercher">
-  </label>
-  <label class="filter">Statut
-    <select name="statut">
-      <option value="">Tous</option>
-      {% for value, label in statuts %}<option value="{{ value }}"{% if value == params.statut %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </label>
-  <label class="filter">Catégorie
-    <select name="categorie">
-      <option value="">Toutes</option>
-      {% for value, label in categories %}<option value="{{ value }}"{% if value == params.categorie %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </label>
-  <button class="btn secondary" type="submit">Filtrer</button>
-  {% if params.q or params.statut or params.categorie %}<a class="reset" href="{% url 'actualites:gestion_liste' %}">Effacer</a>{% endif %}
-</form>
+<div class="card" style="margin-bottom:16px; padding:14px 16px;">
+  <form method="get" class="filtres" role="search">
+    <div class="field" style="margin-bottom:0; flex:2 1 240px;">
+      <label for="actu-q">Recherche</label>
+      <input type="search" id="actu-q" name="q" value="{{ params.q }}" placeholder="Titre ou contenu…" aria-label="Rechercher">
+    </div>
+    <div class="field" style="margin-bottom:0; flex:1 1 160px;">
+      <label for="actu-statut">Statut</label>
+      <select id="actu-statut" name="statut">
+        <option value="">Tous les statuts</option>
+        {% for value, label in statuts %}<option value="{{ value }}"{% if value == params.statut %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:0; flex:1 1 160px;">
+      <label for="actu-categorie">Catégorie</label>
+      <select id="actu-categorie" name="categorie">
+        <option value="">Toutes les catégories</option>
+        {% for value, label in categories %}<option value="{{ value }}"{% if value == params.categorie %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn" type="submit">Filtrer</button>
+      {% if params.q or params.statut or params.categorie %}
+        <a class="btn secondary" href="{% url 'actualites:gestion_liste' %}">Réinitialiser</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
 
 <div class="card table-card">
   <div class="table-wrap">
@@ -41,7 +50,7 @@
           <th>Catégorie</th>
           <th>Statut</th>
           <th>Créée le</th>
-          <th>Actions</th>
+          <th class="right">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -49,12 +58,12 @@
         <tr>
           <td>
             <a href="{% url 'actualites:gestion_modifier' a.pk %}"><strong>{{ a.titre }}</strong></a>
-            {% if a.epinglee %}<span class="badge ok">Épinglée</span>{% endif %}
+            {% if a.epinglee %}<span class="badge ok" style="margin-left:6px;">Épinglée</span>{% endif %}
           </td>
-          <td>{{ a.get_categorie_display }}</td>
+          <td><span class="badge">{{ a.get_categorie_display }}</span></td>
           <td><span class="badge {% if a.statut == 'PUBLIE' %}ok{% endif %}">{{ a.get_statut_display }}</span></td>
-          <td class="nowrap">{{ a.created_at|date:"d/m/Y" }}</td>
-          <td class="nowrap">
+          <td class="nowrap cell-hint">{{ a.created_at|date:"d/m/Y" }}</td>
+          <td class="nowrap right">
             <a class="icon-btn bordered" href="{% url 'actualites:gestion_modifier' a.pk %}" title="Modifier" aria-label="Modifier {{ a.titre }}">{% include "partials/icon.html" with name="edit" %}</a>
             <a class="icon-btn bordered danger" href="{% url 'actualites:gestion_supprimer' a.pk %}" title="Supprimer" aria-label="Supprimer {{ a.titre }}">{% include "partials/icon.html" with name="trash" %}</a>
           </td>

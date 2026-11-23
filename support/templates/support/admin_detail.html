@@ -10,8 +10,8 @@
     <h1>#{{ ticket.pk }} — {{ ticket.titre }}</h1>
     <p>Par {{ ticket.auteur.get_full_name }} · créé le {{ ticket.created_at|date:"d/m/Y à H:i" }}</p>
   </div>
-  <div style="display:flex; gap:8px">
-    <a class="btn secondary" href="{% url 'admin:support_ticket_change' ticket.pk %}">Voir dans l'admin Django</a>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a class="btn" href="{% url 'support:gestion_modifier' ticket.pk %}">{% include "partials/icon.html" with name="edit" %} Modifier le ticket</a>
     <a class="btn secondary" href="{% url 'support:gestion' %}">Retour à la liste</a>
   </div>
 </div>
@@ -53,11 +53,14 @@
   {% if ticket.statut == 'FERME' %}
   <p class="sub">Ce ticket est fermé. Rouvrez-le pour pouvoir répondre.</p>
   {% else %}
-  <form method="post" action="{% url 'support:gestion_repondre' ticket.pk %}" class="reponse">
+  <form method="post" action="{% url 'support:gestion_repondre' ticket.pk %}" class="reponse" novalidate>
     {% csrf_token %}
     {% include "partials/field.html" with field=form_reponse.contenu %}
+    <div class="cell-hint" style="margin-top:-8px; margin-bottom:12px; font-size:0.8rem;">
+      Votre réponse doit comporter entre 2 et 3000 caractères.
+    </div>
     <div class="form-actions">
-      <button type="submit" class="btn">Envoyer la réponse</button>
+      <button type="submit" class="btn">{% include "partials/icon.html" with name="check" %} Envoyer la réponse</button>
     </div>
   </form>
   {% endif %}
