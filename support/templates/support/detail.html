@@ -53,11 +53,14 @@
   {% if ticket.statut == 'FERME' %}
   <p class="sub">Ce ticket est fermé, il n'accepte plus de réponses.</p>
   {% else %}
-  <form method="post" action="{% url 'support:repondre' ticket.pk %}" class="reponse">
+  <form method="post" action="{% url 'support:repondre' ticket.pk %}" class="reponse" novalidate>
     {% csrf_token %}
     {% include "partials/field.html" with field=form_reponse.contenu %}
+    <div class="cell-hint" style="margin-top:-8px; margin-bottom:12px; font-size:0.8rem;">
+      Votre réponse doit comporter entre 2 et 3000 caractères.
+    </div>
     <div class="form-actions">
-      <button type="submit" class="btn">Envoyer la réponse</button>
+      <button type="submit" class="btn">{% include "partials/icon.html" with name="check" %} Envoyer la réponse</button>
     </div>
   </form>
   {% endif %}

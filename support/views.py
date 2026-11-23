@@ -6,7 +6,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
-from .forms import CommentaireForm, TicketFiltreForm, TicketForm
+from .forms import AdminTicketModifierForm, CommentaireForm, TicketFiltreForm, TicketForm
 from .models import Ticket
 
 from django.db.models import Q
@@ -98,7 +98,8 @@ class TicketReplyView(LoginRequiredMixin, View):
             ticket.maj_statut_apres_reponse(par_admin=False)
             messages.success(request, "Votre réponse a bien été envoyée.")
         else:
-            messages.error(request, "Votre message est vide.")
+            err = form.errors.get("contenu", ["Votre message est invalide."])[0]
+            messages.error(request, err)
         return redirect("support:detail", pk=pk)
 
 
@@ -170,5 +171,19 @@ class AdminTicketReplyView(AdminRequiredMixin, View):
             else:
                 messages.success(request, "Réponse envoyée.")
         else:
-            messages.error(request, "Votre message est vide.")
+            err = form.errors.get("contenu", ["Votre message est invalide."])[0]
+            messages.error(request, err)
         return redirect("support:gestion_detail", pk=pk)
+
+
+class AdminTicketModifierView(AdminRequiredMixin, UpdateView):
+    """Permet à l'administrateur de modifier l'ensemble des champs d'un ticket."""
+    model = Ticket
+    form_class = AdminTicketModifierForm
+    template_name = "support/admin_modifier.html"
+    context_object_name = "ticket"
+
+    def form_valid(self, form):
+        ticket = form.save()
+        messages.success(self.request, f"Le ticket #{ticket.pk} « {ticket.titre} » a été modifié avec succès.")
+        return redirect("support:gestion_detail", pk=ticket.pk)

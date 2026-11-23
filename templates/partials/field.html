@@ -4,5 +4,5 @@
   
 
   {% if show_help and field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
-  {% for e in field.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
 </div>

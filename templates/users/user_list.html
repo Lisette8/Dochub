@@ -13,26 +13,35 @@
   </div>
 </div>
 
-<form class="filters" method="get" role="search">
-  <label class="search">{% include "partials/icon.html" with name="search" %}
-    <input type="search" name="q" value="{{ params.q }}" maxlength="{{ q_max }}" placeholder="Nom ou e-mail…" aria-label="Nom ou e-mail">
-  </label>
-  <label class="filter">Rôle
-    <select name="role" data-autosubmit>
-      <option value="">Tous</option>
-      {% for value, label in roles %}<option value="{{ value }}"{% if value == params.role %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </label>
-  <label class="filter">Statut
-    <select name="statut" data-autosubmit>
-      <option value="">Tous</option>
-      {% for value, label in statuts %}<option value="{{ value }}"{% if value == params.statut %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </label>
-  <input type="hidden" name="tri" value="{{ params.tri }}">
-  <button class="btn secondary" type="submit">Rechercher</button>
-  {% if filtered %}<a class="reset" href="{% url 'users:user_list' %}">Effacer</a>{% endif %}
-</form>
+<div class="card" style="margin-bottom:16px; padding:14px 16px;">
+  <form method="get" class="filtres" role="search">
+    <div class="field" style="margin-bottom:0; flex:2 1 240px;">
+      <label for="user-q">Recherche</label>
+      <input type="search" id="user-q" name="q" value="{{ params.q }}" maxlength="{{ q_max }}" placeholder="Nom ou e-mail…" aria-label="Nom ou e-mail">
+    </div>
+    <div class="field" style="margin-bottom:0; flex:1 1 160px;">
+      <label for="user-role">Rôle</label>
+      <select id="user-role" name="role" data-autosubmit>
+        <option value="">Tous les rôles</option>
+        {% for value, label in roles %}<option value="{{ value }}"{% if value == params.role %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:0; flex:1 1 160px;">
+      <label for="user-statut">Statut</label>
+      <select id="user-statut" name="statut" data-autosubmit>
+        <option value="">Tous les statuts</option>
+        {% for value, label in statuts %}<option value="{{ value }}"{% if value == params.statut %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <input type="hidden" name="tri" value="{{ params.tri }}">
+    <div class="form-actions">
+      <button class="btn" type="submit">Filtrer</button>
+      {% if filtered %}
+        <a class="btn secondary" href="{% url 'users:user_list' %}">Réinitialiser</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
 
 {# Suppression d'un seul compte : formulaire à part pour ne pas envoyer les autres cases cochées #}
 <form id="delete-one" method="post" action="{% url 'users:users_delete' %}">{% csrf_token %}</form>
@@ -59,7 +68,7 @@
             {% for c in columns %}
             <th aria-sort="{{ c.sort }}"><a href="{% querystring tri=c.tri page=None %}">{{ c.label }} {{ c.arrow }}</a></th>
             {% endfor %}
-            <th>Actions</th>
+            <th class="right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -74,9 +83,9 @@
             </td>
             <td>{% include "users/_badges.html" with badge="role" %}</td>
             <td>{% include "users/_badges.html" with badge="statut" %}</td>
-            <td class="nowrap">{% if compte.last_login %}{{ compte.last_login|date:"d/m/Y · H:i" }}{% else %}<span class="cell-hint">Jamais</span>{% endif %}</td>
-            <td class="nowrap">{{ compte.date_joined|date:"d/m/Y" }}</td>
-            <td class="nowrap">
+            <td class="nowrap cell-hint">{% if compte.last_login %}{{ compte.last_login|date:"d/m/Y · H:i" }}{% else %}Jamais{% endif %}</td>
+            <td class="nowrap cell-hint">{{ compte.date_joined|date:"d/m/Y" }}</td>
+            <td class="nowrap right">
               <a class="icon-btn bordered" href="{% url 'users:user_update' compte.pk %}" title="Modifier" aria-label="Modifier {{ compte.get_full_name }}">{% include "partials/icon.html" with name="edit" %}</a>
               {% if compte.pk != user.pk %}
               <button class="icon-btn bordered danger" type="submit" form="delete-one" name="comptes" value="{{ compte.pk }}" title="Supprimer" aria-label="Supprimer {{ compte.get_full_name }}">{% include "partials/icon.html" with name="trash" %}</button>

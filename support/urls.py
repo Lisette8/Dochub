@@ -12,5 +12,6 @@ urlpatterns = [
     path("<int:pk>/repondre/", views.TicketReplyView.as_view(), name="repondre"),
     path("gestion/", views.AdminTicketListView.as_view(), name="gestion"),
     path("gestion/<int:pk>/", views.AdminTicketDetailView.as_view(), name="gestion_detail"),
+    path("gestion/<int:pk>/modifier/", views.AdminTicketModifierView.as_view(), name="gestion_modifier"),
     path("gestion/<int:pk>/repondre/", views.AdminTicketReplyView.as_view(), name="gestion_repondre"),
 ]

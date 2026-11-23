@@ -7,45 +7,134 @@
 <div class="page-head">
   <div>
     <h1>Documents</h1>
-    <p>Liste des documents disponibles</p>
+    <p>{{ total }} document{{ total|pluralize }} disponible{{ total|pluralize }} dans la base documentaire</p>
   </div>
-  {% if user.is_staff %}
+  {% if user.is_admin %}
   <div class="head-actions">
-    <a class="btn" href="{% url 'DocumentApp:ajouter' %}">Ajouter</a>
+    <a class="btn" href="{% url 'DocumentApp:gestion' %}">
+      {% include "partials/icon.html" with name="shield" %} Espace Gestion Documents
+    </a>
   </div>
   {% endif %}
 </div>
 
+{# Formulaire de filtres unifié DocHub (Recherche, Type, Thématique) #}
+<div class="card" style="margin-bottom: 16px; padding: 14px 16px;">
+  <form method="get" class="filtres" role="search">
+    <div class="field" style="margin-bottom: 0; flex: 2 1 240px;">
+      <label for="usr-doc-q">Recherche</label>
+      <input type="search" id="usr-doc-q" name="q" value="{{ params.q }}" placeholder="Titre, description ou nom de fichier…" aria-label="Rechercher des documents">
+    </div>
+
+    <div class="field" style="margin-bottom: 0; flex: 1 1 160px;">
+      <label for="usr-doc-type">Type</label>
+      <select id="usr-doc-type" name="type">
+        <option value="">Tous les types</option>
+        {% for value, label in types %}
+          <option value="{{ value }}"{% if value == params.type %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field" style="margin-bottom: 0; flex: 1 1 160px;">
+      <label for="usr-doc-thematique">Thématique</label>
+      <select id="usr-doc-thematique" name="thematique">
+        <option value="">Toutes les thématiques</option>
+        {% for value, label in thematiques %}
+          <option value="{{ value }}"{% if value == params.thematique %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">Filtrer</button>
+      {% if filtered %}
+        <a class="btn secondary" href="{% url 'DocumentApp:liste' %}">Réinitialiser</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{# Table unifiée des documents utilisateur #}
 <div class="card table-card">
-  {% if documents %}
   <div class="table-wrap">
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Titre</th>
-        <th>Description</th>
-        <th>Créé le</th>
-        <th>Modifié le</th>
-        {% if user.is_staff %}<th></th>{% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for document in documents %}
-      <tr>
-        <td>{{ document.titreDocument }}</td>
-        <td>{{ document.descDocument }}</td>
-        <td>{{ document.created_at|date:"d/m/Y" }}</td>
-        <td>{{ document.updated_at|date:"d/m/Y" }}</td>
-        {% if user.is_staff %}
-        <td class="right"><a href="{% url 'DocumentApp:detail' document.pk %}">Détails</a></td>
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Titre</th>
+          <th>Thématique</th>
+          <th>Type</th>
+          <th>Taille</th>
+          <th>Déposé le</th>
+          <th class="right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for document in documents %}
+        <tr>
+          <td>
+            <div class="person">
+              <span class="stat-icon" style="width: 34px; height: 34px; border-radius: 8px; font-size: 0.8rem; background: #EEF2FF; color: var(--indigo);">
+                {% include "partials/icon.html" with name="file" %}
+              </span>
+              <span>
+                <strong style="color: var(--text);">{{ document.titreDocument }}</strong>
+                {% if document.descDocument %}
+                  <br><span class="cell-hint">{{ document.descDocument|truncatechars:70 }}</span>
+                {% endif %}
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="badge">{{ document.get_thematique_display|default:"—" }}</span>
+          </td>
+          <td>
+            {% with tp=document.type_document ext=document.extension %}
+            <span class="badge {% if tp == 'PDF' or ext == 'PDF' %}danger{% elif tp == 'MD' or ext == 'MD' %}admin{% elif tp == 'TXT' or ext == 'TXT' %}ok{% endif %}">
+              {% if tp == 'PDF' or ext == 'PDF' %}PDF
+              {% elif tp == 'MD' or ext == 'MD' %}Markdown
+              {% elif tp == 'TXT' or ext == 'TXT' %}Texte
+              {% else %}{{ document.get_type_document_display }}{% endif %}
+            </span>
+            {% endwith %}
+          </td>
+          <td class="nowrap cell-hint">{{ document.taille_lisible }}</td>
+          <td class="nowrap cell-hint">{{ document.created_at|date:"d/m/Y" }}</td>
+          <td class="right nowrap">
+            {% if document.fichier %}
+              <a class="btn secondary" href="{% url 'DocumentApp:telecharger' document.pk %}" style="padding: 6px 14px; font-size: 0.82rem; height: auto;">
+                {% include "partials/icon.html" with name="download" %} Télécharger
+              </a>
+            {% else %}
+              <span class="cell-hint">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="empty">
+            {% if filtered %}
+              Aucun document ne correspond à cette recherche.
+            {% else %}
+              Aucun document disponible pour le moment.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  {% else %}
-  <p class="empty">Aucun document disponible.</p>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pager">
+    {% if page_obj.has_previous %}
+      <a class="btn secondary" href="{% querystring page=page_obj.previous_page_number %}">Précédent</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} · {{ total }} document{{ total|pluralize }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn secondary" href="{% querystring page=page_obj.next_page_number %}">Suivant</a>
+    {% endif %}
+  </div>
   {% endif %}
 </div>
 {% endblock %}

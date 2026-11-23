@@ -2,29 +2,151 @@
 {% load static %}
 {% block title %}{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Nouveau ticket{% endif %} — DocHub{% endblock %}
 {% block nav_support %}active{% endblock %}
+
 {% block content %}
 <link rel="stylesheet" href="{% static 'support/css/support.css' %}">
 
-<div class="page-head">
-  <div>
-    <h1>{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Nouveau ticket{% endif %}</h1>
-    <p>{% if object %}Vous pouvez modifier votre ticket tant qu'il n'est pas pris en charge.{% else %}Décrivez votre demande, l'équipe de support vous répondra.{% endif %}</p>
+<div style="max-width: 780px; margin: 0 auto;">
+  <div style="margin-bottom: 16px; font-size: 0.85rem; color: var(--muted);">
+    <a href="{% url 'support:liste' %}" style="color: var(--muted); text-decoration: none;">Support & Tickets</a>
+    <span style="margin: 0 8px;">/</span>
+    <span style="color: var(--text);">{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Nouveau ticket{% endif %}</span>
+  </div>
+
+  <div class="page-head" style="margin-bottom: 24px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <h1 style="margin: 0;">{% if object %}Modifier le ticket #{{ object.pk }}{% else %}Ouvrir un nouveau ticket{% endif %}</h1>
+        <span class="badge" style="background: var(--indigo-soft); color: var(--indigo);">
+          {% include "partials/icon.html" with name="support" %} Support utilisateur
+        </span>
+      </div>
+      <p style="margin-top: 6px;">
+        {% if object %}
+          Vous pouvez modifier votre ticket tant qu'il n'est pas encore pris en charge par l'équipe.
+        {% else %}
+          Décrivez votre demande ou incident technique, notre équipe de support vous répondra rapidement.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--danger); background: var(--danger-soft); padding: 14px 18px;">
+      <div style="font-weight: 600; color: var(--danger); margin-bottom: 4px;">Veuillez corriger les erreurs suivantes :</div>
+      {% for error in form.non_field_errors %}
+        <div style="color: var(--danger); font-size: 0.88rem;">• {{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card" style="padding: 24px;">
+    <form method="post" novalidate id="support-ticket-form">
+      {% csrf_token %}
+
+      {# Titre du ticket #}
+      <div class="field{% if form.titre.errors %} has-error{% endif %}" style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+          <label for="{{ form.titre.id_for_label }}" style="font-weight: 600; font-size: 0.88rem;">
+            Titre de la demande <span style="color: var(--danger);">*</span>
+          </label>
+          <span class="cell-hint" id="titre-counter" style="font-size: 0.78rem;">0 / 200</span>
+        </div>
+        {{ form.titre }}
+        {% if form.titre.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+            {% for err in form.titre.errors %}{{ err }}{% endfor %}
+          </div>
+        {% else %}
+          <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Minimum 5 caractères, maximum 200 caractères. Résumez clairement l'objet de votre demande.</div>
+        {% endif %}
+      </div>
+
+      {# Catégorie & Priorité #}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 18px;">
+        <div class="field{% if form.categorie.errors %} has-error{% endif %}">
+          <label for="{{ form.categorie.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Catégorie <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.categorie }}
+          {% if form.categorie.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.categorie.errors %}{{ err }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="field{% if form.priorite.errors %} has-error{% endif %}">
+          <label for="{{ form.priorite.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Niveau de priorité <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.priorite }}
+          {% if form.priorite.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.priorite.errors %}{{ err }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Description #}
+      <div class="field{% if form.description.errors %} has-error{% endif %}" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+          <label for="{{ form.description.id_for_label }}" style="font-weight: 600; font-size: 0.88rem;">
+            Description détaillée <span style="color: var(--danger);">*</span>
+          </label>
+          <span class="cell-hint" id="desc-counter" style="font-size: 0.78rem;">0 / 5000</span>
+        </div>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+            {% for err in form.description.errors %}{{ err }}{% endfor %}
+          </div>
+        {% else %}
+          <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Minimum 15 caractères, maximum 5000 caractères. Donnez tous les détails utiles pour accélérer la résolution.</div>
+        {% endif %}
+      </div>
+
+      {# Actions #}
+      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 14px; border-top: 1px solid var(--border);">
+        <a class="btn secondary" href="{% if object %}{% url 'support:detail' object.pk %}{% else %}{% url 'support:liste' %}{% endif %}">
+          Annuler
+        </a>
+        <button type="submit" class="btn">
+          {% include "partials/icon.html" with name="check" %}
+          {% if object %}Enregistrer les modifications{% else %}Envoyer le ticket{% endif %}
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
-<div class="card">
-  <form method="post" novalidate>
-    {% csrf_token %}
-    {% include "partials/field.html" with field=form.titre %}
-    <div class="field-row">
-      {% include "partials/field.html" with field=form.categorie %}
-      {% include "partials/field.html" with field=form.priorite %}
-    </div>
-    {% include "partials/field.html" with field=form.description %}
-    <div class="form-actions">
-          <button type="submit" class="btn">{% if object %}Enregistrer{% else %}Envoyer le ticket{% endif %}</button>
-          <a class="btn secondary" href="{% if object %}{% url 'support:detail' object.pk %}{% else %}{% url 'support:liste' %}{% endif %}">Annuler</a>
-    </div>
-  </form>
-</div>
+<script>
+(function() {
+  function setupCounter(inputId, counterId, maxLen, minLen) {
+    var el = document.getElementById(inputId);
+    var counter = document.getElementById(counterId);
+    if (!el || !counter) return;
+    function update() {
+      var len = (el.value || "").trim().length;
+      counter.textContent = len + " / " + maxLen;
+      if (len < minLen && len > 0) {
+        counter.style.color = "var(--warn)";
+        counter.style.fontWeight = "600";
+      } else if (len > maxLen) {
+        counter.style.color = "var(--danger)";
+        counter.style.fontWeight = "bold";
+      } else {
+        counter.style.color = "var(--muted)";
+        counter.style.fontWeight = "normal";
+      }
+    }
+    el.addEventListener("input", update);
+    update();
+  }
+
+  setupCounter("ticket-titre", "titre-counter", 200, 5);
+  setupCounter("ticket-description", "desc-counter", 5000, 15);
+})();
+</script>
 {% endblock %}

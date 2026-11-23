@@ -40,19 +40,23 @@
         <th>Statut</th>
         <th>Assigné à</th>
         <th>Créé le</th>
+        <th class="right">Actions</th>
       </tr>
     </thead>
     <tbody>
       {% for t in tickets %}
       <tr>
         <td>#{{ t.pk }}</td>
-        <td><a href="{% url 'support:gestion_detail' t.pk %}">{{ t.titre }}</a></td>
+        <td><a href="{% url 'support:gestion_detail' t.pk %}"><strong>{{ t.titre }}</strong></a></td>
         <td>{{ t.auteur.get_full_name }}</td>
-        <td>{{ t.get_categorie_display }}</td>
+        <td><span class="badge">{{ t.get_categorie_display }}</span></td>
         <td>{{ t.get_priorite_display }}</td>
-        <td><span class="badge {% if t.statut == 'RESOLU' or t.statut == 'FERME' %}ok{% endif %}">{{ t.get_statut_display }}</span></td>
+        <td><span class="badge {% if t.statut == 'RESOLU' or t.statut == 'FERME' %}ok{% elif t.statut == 'EN_COURS' %}warn{% endif %}">{{ t.get_statut_display }}</span></td>
         <td>{{ t.assigne_a.get_full_name|default:"—" }}</td>
-        <td>{{ t.created_at|date:"d/m/Y" }}</td>
+        <td class="nowrap cell-hint">{{ t.created_at|date:"d/m/Y" }}</td>
+        <td class="nowrap right">
+          <a class="icon-btn bordered" href="{% url 'support:gestion_modifier' t.pk %}" title="Modifier le ticket" aria-label="Modifier le ticket #{{ t.pk }}">{% include "partials/icon.html" with name="edit" %}</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Modifier le ticket #{{ ticket.pk }} — DocHub{% endblock %}
+{% block nav_support_admin %}active{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'support/css/support.css' %}">
+
+<div style="max-width: 780px; margin: 0 auto;">
+  <div style="margin-bottom: 16px; font-size: 0.85rem; color: var(--muted);">
+    <a href="{% url 'support:gestion' %}" style="color: var(--muted); text-decoration: none;">Gestion des tickets</a>
+    <span style="margin: 0 8px;">/</span>
+    <a href="{% url 'support:gestion_detail' ticket.pk %}" style="color: var(--muted); text-decoration: none;">Ticket #{{ ticket.pk }}</a>
+    <span style="margin: 0 8px;">/</span>
+    <span style="color: var(--text);">Modifier</span>
+  </div>
+
+  <div class="page-head" style="margin-bottom: 24px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <h1 style="margin: 0;">Modifier le ticket #{{ ticket.pk }}</h1>
+        <span class="badge admin">{% include "partials/icon.html" with name="shield" %} Vue Administrateur</span>
+      </div>
+      <p style="margin-top: 6px;">
+        Auteur : <strong>{{ ticket.auteur.get_full_name }}</strong> ({{ ticket.auteur.email }}) · Créé le {{ ticket.created_at|date:"d/m/Y à H:i" }}
+      </p>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--danger); background: var(--danger-soft); padding: 14px 18px;">
+      <div style="font-weight: 600; color: var(--danger); margin-bottom: 4px;">Veuillez corriger les erreurs suivantes :</div>
+      {% for error in form.non_field_errors %}
+        <div style="color: var(--danger); font-size: 0.88rem;">• {{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card" style="padding: 24px;">
+    <form method="post" novalidate id="admin-ticket-form">
+      {% csrf_token %}
+
+      {# Titre #}
+      <div class="field{% if form.titre.errors %} has-error{% endif %}" style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+          <label for="{{ form.titre.id_for_label }}" style="font-weight: 600; font-size: 0.88rem;">
+            Titre du ticket <span style="color: var(--danger);">*</span>
+          </label>
+          <span class="cell-hint" id="admin-titre-counter" style="font-size: 0.78rem;">0 / 200</span>
+        </div>
+        {{ form.titre }}
+        {% if form.titre.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+            {% for err in form.titre.errors %}{{ err }}{% endfor %}
+          </div>
+        {% else %}
+          <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Minimum 5 caractères, maximum 200 caractères.</div>
+        {% endif %}
+      </div>
+
+      {# Catégorie & Priorité #}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 18px;">
+        <div class="field{% if form.categorie.errors %} has-error{% endif %}">
+          <label for="{{ form.categorie.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Catégorie <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.categorie }}
+          {% if form.categorie.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.categorie.errors %}{{ err }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="field{% if form.priorite.errors %} has-error{% endif %}">
+          <label for="{{ form.priorite.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Priorité <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.priorite }}
+          {% if form.priorite.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.priorite.errors %}{{ err }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Statut & Assigné à #}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 18px;">
+        <div class="field{% if form.statut.errors %} has-error{% endif %}">
+          <label for="{{ form.statut.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Statut <span style="color: var(--danger);">*</span>
+          </label>
+          {{ form.statut }}
+          {% if form.statut.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.statut.errors %}{{ err }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="field{% if form.assigne_a.errors %} has-error{% endif %}">
+          <label for="{{ form.assigne_a.id_for_label }}" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+            Assigné à (Administrateur)
+          </label>
+          {{ form.assigne_a }}
+          {% if form.assigne_a.errors %}
+            <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+              {% for err in form.assigne_a.errors %}{{ err }}{% endfor %}
+            </div>
+          {% else %}
+            <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Seuls les administrateurs DocHub peuvent être assignés.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Description #}
+      <div class="field{% if form.description.errors %} has-error{% endif %}" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+          <label for="{{ form.description.id_for_label }}" style="font-weight: 600; font-size: 0.88rem;">
+            Description détaillée <span style="color: var(--danger);">*</span>
+          </label>
+          <span class="cell-hint" id="admin-desc-counter" style="font-size: 0.78rem;">0 / 5000</span>
+        </div>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <div class="field-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 6px; font-weight: 500;">
+            {% for err in form.description.errors %}{{ err }}{% endfor %}
+          </div>
+        {% else %}
+          <div class="cell-hint" style="margin-top: 4px; font-size: 0.8rem;">Minimum 15 caractères, maximum 5000 caractères.</div>
+        {% endif %}
+      </div>
+
+      {# Actions #}
+      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 14px; border-top: 1px solid var(--border);">
+        <a class="btn secondary" href="{% url 'support:gestion_detail' ticket.pk %}">
+          Annuler
+        </a>
+        <button type="submit" class="btn">
+          {% include "partials/icon.html" with name="check" %}
+          Enregistrer les modifications
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  function setupCounter(inputId, counterId, maxLen, minLen) {
+    var el = document.getElementById(inputId);
+    var counter = document.getElementById(counterId);
+    if (!el || !counter) return;
+    function update() {
+      var len = (el.value || "").trim().length;
+      counter.textContent = len + " / " + maxLen;
+      if (len < minLen && len > 0) {
+        counter.style.color = "var(--warn)";
+        counter.style.fontWeight = "600";
+      } else if (len > maxLen) {
+        counter.style.color = "var(--danger)";
+        counter.style.fontWeight = "bold";
+      } else {
+        counter.style.color = "var(--muted)";
+        counter.style.fontWeight = "normal";
+      }
+    }
+    el.addEventListener("input", update);
+    update();
+  }
+
+  setupCounter("admin-ticket-titre", "admin-titre-counter", 200, 5);
+  setupCounter("admin-ticket-description", "admin-desc-counter", 5000, 15);
+})();
+</script>
+{% endblock %}
